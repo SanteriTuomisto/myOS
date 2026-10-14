@@ -7,39 +7,36 @@
       </div>
     </div>
     <div style="height: 100%; background-color: white;">
-      <Editor v-model="value" editorStyle="height: calc(100% - 42px);" style="height: 100%;" />
+      <div ref="editor" style="height: calc(100% - 42px);"></div>
     </div>
   </div>
 </template>
 
 <script>
 import SaveIcon from '@/assets/SaveIcon.vue';
-import Editor from 'primevue/editor';
+import Quill from 'quill';
+import 'quill/dist/quill.snow.css';
 
 export default {
   components: {
     SaveIcon,
-    Editor,
   },
   props: {
     id: Number,
     fileSystemId: Number,
   },
-  data() {
-    return {
-      value: '',
-    };
-  },
-  created() {
+  mounted() {
+    // Kept off data() so Vue doesn't make the Quill instance reactive
+    this.quill = new Quill(this.$refs.editor, { theme: 'snow' });
     const fileSystemItem = this.$store.getters.getItem(this.fileSystemId);
     if (fileSystemItem && fileSystemItem.data) {
-      this.value = fileSystemItem.data;
+      this.quill.clipboard.dangerouslyPasteHTML(fileSystemItem.data);
     }
   },
   methods: {
     savebtn() {
       this.$store.dispatch('closeApplication', this.id);
-      this.$store.dispatch('saveFileContent', { id: this.fileSystemId, text: this.value });
+      this.$store.dispatch('saveFileContent', { id: this.fileSystemId, text: this.quill.root.innerHTML });
     },
   },
 };

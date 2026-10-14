@@ -106,7 +106,7 @@ export default defineComponent({
     },
     specialAttackMonster() {
       this.currentRound++;
-      const attackValue = getRandomValue(5, 12);
+      const attackValue = getRandomValue(10, 25);
       this.addLogMessage('player', 'attack', attackValue);
       this.monsterHealth -= attackValue;
       this.attackPlayer();

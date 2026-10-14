@@ -16,7 +16,7 @@ interface State {
 }
 
 const state: State = {
-  nextFileId: 20,
+  nextFileId: 21,
   fileSystemItems: [
     {
       id: 0,
@@ -127,7 +127,7 @@ const state: State = {
       name: 'Music',
     },
     {
-      id: 3,
+      id: 20,
       type: 'terminal',
       name: 'Terminal',
     },
@@ -167,7 +167,9 @@ const mutations = {
     // Todo delete also file content
     if (currentPath.length === 1 && currentPath[0].id === -1) {
       const index = items.findIndex(i => i.id === id);
-      items.splice(index, 1);
+      if (index !== -1) {
+        items.splice(index, 1);
+      }
       return;
     }
     // Find correct node
@@ -184,7 +186,9 @@ const mutations = {
       return;
     }
     const index = loopItem.content.findIndex(i => i.id === id);
-    loopItem.content.splice(index, 1);
+    if (index !== -1) {
+      loopItem.content.splice(index, 1);
+    }
   },
   saveFileContentMut(state: State, data: { id: number, text: string }) {
     const index = state.fileData.findIndex(i => i.id === data.id);

@@ -57,11 +57,14 @@
 </template>
 
 <script>
-import VueResizable from 'vue-resizable';
+import VueResizableModule from 'vue-resizable';
 import { mapGetters } from 'vuex';
 import XIcon from '@/assets/XIcon.vue';
 import ExpandIcon from '@/assets/ExpandIcon.vue';
 import MinimizeIcon from '@/assets/MinimizeIcon.vue';
+
+// vue-resizable ships only a UMD build, whose default export ends up nested
+const VueResizable = VueResizableModule.default || VueResizableModule;
 
 export default {
   emits: ['click'],

@@ -4,24 +4,20 @@ https://santerituomisto.github.io/
 
 ## Project setup
 ```
-npm install
+pnpm install
 ```
 
-### Compiles and hot-reloads for development
+### Dev server with hot reload
 ```
-npm run serve
-```
-
-### Compiles and minifies for production
-```
-npm run build
+pnpm dev
 ```
 
-### Lints and fixes files
+### Type-check and build for production
 ```
-npm run lint
+pnpm build
 ```
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
-# myOS
+### Lint
+```
+pnpm lint
+```

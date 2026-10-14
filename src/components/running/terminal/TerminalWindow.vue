@@ -1,32 +1,35 @@
 <template>
-  <div style="height: 100%; width: 100%;">
-    <Terminal
-      :welcomeMessage="`myOs ${$store.state.version}`"
-      :prompt="prompt"
-      aria-label="Terminal"
-      class="terminal"
-      :pt="{
-        root: 'bg-gray-900 text-white',
-        prompt: 'text-gray-400 mr-2',
-        command: 'text-primary-300',
-        response: 'text-primary-300',
-      }"
-    />
+  <div class="terminal" @click="focusInput" aria-label="Terminal">
+    <div>myOs {{ $store.state.version }}</div>
+    <div v-for="(line, index) in lines" :key="index">
+      <div v-if="line.command != null">
+        <span class="prompt">{{ line.prompt }}</span>
+        <span>{{ line.command }}</span>
+      </div>
+      <div v-if="line.response" class="response">{{ line.response }}</div>
+    </div>
+    <div class="input-row">
+      <span class="prompt">{{ prompt }}</span>
+      <input
+        ref="input"
+        v-model="input"
+        class="input"
+        spellcheck="false"
+        autocomplete="off"
+        @keydown.enter="submit"
+      />
+    </div>
   </div>
 </template>
 
 <script>
 import { mapGetters } from 'vuex';
-import Terminal from "primevue/terminal";
-import TerminalService from "primevue/terminalservice";
-import "primevue/resources/themes/lara-light-green/theme.css";
 
 export default {
-  components: {
-    Terminal,
-  },
   data() {
     return {
+      input: '',
+      lines: [],
       paths: [{
         name: 'home',
         id: -1,
@@ -34,16 +37,26 @@ export default {
     };
   },
   mounted() {
-    TerminalService.on("command", this.commandHandler);
-  },
-  beforeUnmount() {
-    TerminalService.off("command", this.commandHandler);
+    this.focusInput();
   },
   methods: {
+    focusInput() {
+      this.$refs.input?.focus();
+    },
+    submit() {
+      const text = this.input.trim();
+      const prompt = this.prompt;
+      this.input = '';
+      const response = text === '' ? '' : this.commandHandler(text);
+      this.lines.push({ prompt, command: text, response });
+      this.$nextTick(() => {
+        this.$refs.input?.scrollIntoView({ block: 'nearest' });
+      });
+    },
     commandHandler(text) {
       let response = '';
-      let argsIndex = text.indexOf(" ");
-      let command = argsIndex !== -1 ? text.substring(0, argsIndex) : text;
+      const argsIndex = text.indexOf(" ");
+      const command = argsIndex !== -1 ? text.substring(0, argsIndex) : text;
 
       switch (command) {
         case "help":
@@ -55,14 +68,16 @@ export default {
           }
           break;
         case "cd":
-          // eslint-disable-next-line
+           
           const param = text.substring(argsIndex + 1).toLowerCase();
           if (param === '..') {
-            this.paths.pop();
+            if (!this.isHome) {
+              this.paths.pop();
+            }
             break;
           }
-          // eslint-disable-next-line
-          const folder = this.getCurrentFolder.find(f => f.name.toLowerCase() === param);
+           
+          const folder = this.getCurrentFolder.find(f => f.type === 'folder' && f.name.toLowerCase() === param);
           if (folder) {
             this.paths.push({ name: folder.name, id: folder.id, content: folder.content });
           } else {
@@ -71,7 +86,7 @@ export default {
           // TODO vastaa ls?
           break;
         case "open":
-          // eslint-disable-next-line
+           
           const item = this.getCurrentFolder.find(f => f.name.toLowerCase() === text.substring(argsIndex + 1).toLowerCase());
           if (item) {
             this.$store.dispatch('openApplication', {
@@ -87,9 +102,7 @@ export default {
           response = "Unknown command: " + command + ", try help";
       }
 
-      if (response != '') {
-        TerminalService.emit("response", response);
-      }
+      return response;
     },
   },
   computed: {
@@ -117,18 +130,40 @@ export default {
 
 <style scoped>
 .terminal {
-  border: none;
+  box-sizing: border-box;
   background-color: black;
   color: #d2d2d2;
   height: 100%;
   width: 100%;
+  padding: 8px;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-::v-deep(.p-terminal-prompt) {
+.prompt {
   color: #9e9ede;
+  margin-right: 4px;
 }
 
-::v-deep(.p-terminal-response) {
+.response {
   color: #717199;
+}
+
+.input-row {
+  display: flex;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
 }
 </style>
