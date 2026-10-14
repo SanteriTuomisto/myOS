@@ -3,31 +3,23 @@
   <div id="desktop">
     <div class="desktop-item-wrapper">
       <DesktopItem
-        v-for="(item, index) in getDesktopItems"
-        :key="index"
+        v-for="item in desktopItems"
+        :key="item.id"
         :name="item.name"
         @click="openWindow(item)"
       >
-        <BrowserIcon v-if="item.type === 'browser'" />
-        <MusicIcon v-else-if="item.type === 'musicPlayer'" />
-        <FolderIcon v-else-if="item.type === 'fileExplorer' || item.type === 'folder'" />
-        <TerminalIcon v-else-if="item.type === 'terminal'" />
-        <SettingsIcon v-else-if="item.type === 'settings'" />
-        <FileIcon v-else-if="item.type === 'file'" />
-        <TrashIcon v-else-if="item.type === 'recycleBin'" />
-        <MonsterIcon v-else-if="item.type === 'monsterSlayer'" />
+        <ItemIcon :type="item.type" />
       </DesktopItem>
     </div>
     <Window
       v-for="app, index in applications" :key="app.id"
-      :id="app.id"
       :app="app"
       :index="index"
       :hideBottomBorder="app.type === 'fileExplorer' || app.type === 'browser'"
       :minW="windowMinWidth(app.type)"
       :minH="app.type === 'fileExplorer' ? 350 : 250"
-      :initHeight="getWindowSize(app.type).height"
-      :initWidth="getWindowSize(app.type).width"
+      :initHeight="applicationsStore.getWindowSize(app.type).height"
+      :initWidth="applicationsStore.getWindowSize(app.type).width"
     >
       <FileExplorer v-if="app.type === 'fileExplorer'" :fileSystemId="app.fileSystemId" />
       <MusicPlayer v-if="app.type === 'musicPlayer'" />
@@ -40,24 +32,18 @@
   </div>
   <div class="desktop-background"
     :class="{
-      'desktop-background-1': getBackground === '1',
-      'desktop-background-2': getBackground === '2',
-      'desktop-background-3': getBackground === '3',
+      'desktop-background-1': background === '1',
+      'desktop-background-2': background === '2',
+      'desktop-background-3': background === '3',
     }"
   >
   </div>
 </template>
 
-<script lang="ts">
-import { defineAsyncComponent, defineComponent } from 'vue';
-import { mapGetters } from 'vuex';
-import FolderIcon from '@/assets/FolderIcon.vue';
-import TerminalIcon from '@/assets/TerminalIcon.vue';
-import TrashIcon from '@/assets/TrashIcon.vue';
-import MusicIcon from '@/assets/MusicIcon.vue';
-import BrowserIcon from '@/assets/BrowserIcon.vue';
-import FileIcon from '@/assets/FileIcon.vue';
-import SettingsIcon from '@/assets/SettingsIcon.vue';
+<script setup lang="ts">
+import { computed, defineAsyncComponent } from 'vue';
+import { storeToRefs } from 'pinia';
+import ItemIcon from '@/components/_shared/ItemIcon.vue';
 import Window from './Window.vue';
 import DesktopItem from './DesktopItem.vue';
 import FileExplorer from '../fileExplorer/FileExplorer.vue';
@@ -65,80 +51,40 @@ import Browser from '../browser/Browser.vue';
 import MusicPlayer from '../musicPlayer/MusicPlayer.vue';
 import TerminalWindow from '../terminal/TerminalWindow.vue';
 import SettingsWindow from '../settings/SettingsWindow.vue';
-import MonsterIcon from '@/assets/MonsterIcon.vue';
 import MonsterSlayer from '@/components/projects/monsterSlayer/MonsterSlayer.vue';
-import { Item, ApplicationType } from '@/store/fileSystem';
-import { Application } from '@/store/applications';
+import type { AppType, FileSystemItem } from '@/types';
+import { useApplicationsStore } from '@/stores/applications';
+import { useFileSystemStore } from '@/stores/fileSystem';
+import { useSettingsStore } from '@/stores/settings';
 
-export default defineComponent({
-  components: {
-    Window,
-    DesktopItem,
-    FolderIcon,
-    TerminalIcon,
-    BrowserIcon,
-    MusicIcon,
-    FileIcon,
-    TrashIcon,
-    FileExplorer,
-    Browser,
-    MusicPlayer,
-    // Lazy so the editor library loads only when a file is opened
-    TextEditor: defineAsyncComponent(() => import('../editor/TextEditor.vue')),
-    TerminalWindow,
-    SettingsWindow,
-    SettingsIcon,
-    MonsterSlayer,
-    MonsterIcon,
-  },
-  data(): {
-    applications: Application[];
-  } {
-    return {
-      applications: [],
-    };
-  },
-  mounted() {
-    this.applications = this.getApplications;
-  },
-  methods: {
-    openWindow(item: Item) {
-      const application = {
-        name: item.name,
-        // Folders open in the file explorer
-        type: item.type === 'folder' ? 'fileExplorer' : item.type,
-        fileSystemId: item.id,
-      };
-      this.$store.dispatch('openApplication', application);
-    },
-    windowMinWidth(type: ApplicationType) {
-      if (type === 'fileExplorer') {
-        return 450;
-      }
-      if (type === 'file') {
-        return 659;
-      }
-      return 400;
-    },
-    getWindowSize(type: ApplicationType) {
-      return this.$store.getters.getWindowSize(type);
-    },
-  },
-  computed: {
-    ...mapGetters({  
-      getApplications: 'getApplications',
-      getBackground: 'getBackground',
-    }),
-    getDesktopItems() {
-      return this.$store.getters.getFileSystemItems.find((i: Item) => i.name === 'Desktop')?.content || [];
-    },
-  },
-  watch: {
-    getApplications(apps) {
-      this.applications = apps;
-    },
-  },
-});
+// Lazy so the editor library loads only when a file is opened
+const TextEditor = defineAsyncComponent(() => import('../editor/TextEditor.vue'));
+
+const applicationsStore = useApplicationsStore();
+const fileSystem = useFileSystemStore();
+const { applications } = storeToRefs(applicationsStore);
+const { background } = storeToRefs(useSettingsStore());
+
+const desktopItems = computed(() => fileSystem.getTopLevelFolder('Desktop'));
+
+function openWindow(item: FileSystemItem) {
+  applicationsStore.openApplication({
+    name: item.name,
+    // Folders open in the file explorer
+    type: item.type === 'folder' ? 'fileExplorer' : item.type,
+    fileSystemId: item.id,
+  });
+}
+
+function windowMinWidth(type: AppType) {
+  if (type === 'fileExplorer') {
+    return 450;
+  }
+  if (type === 'file') {
+    return 659;
+  }
+  return 400;
+}
 </script>
 
 <style scoped lang="scss">

@@ -7,14 +7,10 @@
   </button>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
-
-export default defineComponent({
-  props: {
-    selected: Boolean,
-  },
-});
+<script setup lang="ts">
+defineProps<{
+  selected?: boolean;
+}>();
 </script>
 
 <style lang="scss" scoped>

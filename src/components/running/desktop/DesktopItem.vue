@@ -11,26 +11,18 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+defineProps<{
+  name: string;
+}>();
 
-export default {
-  emits: ['click'],
-  props: {
-    icon: {
-      type: String,
-      default: null,
-    },
-    name: {
-      type: String,
-      default: '',
-    },
-  },
-  methods: {
-    doubleClick() {
-      this.$emit('click');
-    },
-  },
-};
+const emit = defineEmits<{
+  click: [];
+}>();
+
+function doubleClick() {
+  emit('click');
+}
 </script>
 
 <style scoped lang="scss">

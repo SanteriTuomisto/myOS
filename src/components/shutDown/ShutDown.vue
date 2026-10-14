@@ -28,38 +28,31 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref } from 'vue';
 import PowerIcon from '@/assets/PowerIcon.vue';
 import Bootup from '@/components/boot/Bootup.vue';
+import { useSystemStore } from '@/stores/system';
 
-export default {
-  components: {
-    PowerIcon,
-    Bootup,
-  },
-  data() {
-    return {
-      powerOn: false,
-      zoom: false,
-      showBootup: false,
-    };
-  },
-  methods: {
-    start() {
-      if (this.powerOn) {
-        return;
-      }
-      this.powerOn = true;
-      setTimeout(() => {
-        this.zoom = true;
-        this.showBootup = true;
-        setTimeout(() => {
-          this.$store.dispatch('togglePower');
-        }, 5000);
-      }, 500);
-    },
-  },
-};
+const system = useSystemStore();
+// Local LED/animation state; the store is powered on once the boot animation ends
+const powerOn = ref(false);
+const zoom = ref(false);
+const showBootup = ref(false);
+
+function start() {
+  if (powerOn.value) {
+    return;
+  }
+  powerOn.value = true;
+  setTimeout(() => {
+    zoom.value = true;
+    showBootup.value = true;
+    setTimeout(() => {
+      system.togglePower();
+    }, 5000);
+  }, 500);
+}
 </script>
 
 <style lang="scss" scoped>

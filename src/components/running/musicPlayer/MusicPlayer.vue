@@ -41,71 +41,60 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
+import { computed, ref, shallowRef } from 'vue';
 import ArrowLeft from '@/assets/ArrowLeft.vue';
 import MusicIcon from '@/assets/MusicIcon.vue';
 
-interface Song {
+export interface Song {
   artist: string;
   name: string;
   filename: string;
   length: string;
 }
 
-export default defineComponent({
-  components: {
-    ArrowLeft,
-    MusicIcon,
-  },
-  data(): {
-    currentSongEl: HTMLAudioElement | undefined;
-    currentSong: Song | undefined;
-    isPlaying: boolean;
-    songs: Song[];
-  } {
-    return {
-      currentSongEl: undefined,
-      currentSong: undefined,
-      isPlaying: false,
-      songs: [
-        // { artist: 'Test', name: 'Kyösti', filename: 'kyostidemoni.mp3', length: '3:00' }
-      ],
-    };
-  },
-  methods: {
-    selectSong(song: Song) {
-      if (this.currentSongEl != null && !this.currentSongEl.paused) {
-        this.currentSongEl.pause();
-        this.isPlaying = false;
-      }
-      this.currentSong = song;
-      this.currentSongEl = new Audio(new URL(`../../../assets/music/${song.filename}`, import.meta.url).href);
-    },
-    play() {
-      if (!this.currentSongEl) {
-        return;
-      }
-      if (this.currentSongEl.paused) {
-        this.isPlaying = true;
-        this.currentSongEl.play();
-      } else {
-        this.isPlaying = false;
-        this.currentSongEl.pause();
-      }
-    },
-  },
-  computed: {
-    getPlayButtonClass() {
-      if (this.currentSongEl == null) {
-        return 'play-button-disabled';
-      }
-      if (this.isPlaying) {
-        return 'play-button-playing';
-      }
-      return 'play-button';
-    },
+withDefaults(defineProps<{
+  songs?: Song[];
+}>(), {
+  songs: () => [
+    // { artist: 'Test', name: 'Kyösti', filename: 'kyostidemoni.mp3', length: '3:00' }
+  ],
+});
+
+const currentSongEl = shallowRef<HTMLAudioElement>();
+const currentSong = ref<Song>();
+const isPlaying = ref(false);
+
+function selectSong(song: Song) {
+  if (currentSongEl.value != null && !currentSongEl.value.paused) {
+    currentSongEl.value.pause();
+    isPlaying.value = false;
   }
+  currentSong.value = song;
+  currentSongEl.value = new Audio(new URL(`../../../assets/music/${song.filename}`, import.meta.url).href);
+}
+
+function play() {
+  if (!currentSongEl.value) {
+    return;
+  }
+  if (currentSongEl.value.paused) {
+    isPlaying.value = true;
+    currentSongEl.value.play();
+  } else {
+    isPlaying.value = false;
+    currentSongEl.value.pause();
+  }
+}
+
+const getPlayButtonClass = computed(() => {
+  if (currentSongEl.value == null) {
+    return 'play-button-disabled';
+  }
+  if (isPlaying.value) {
+    return 'play-button-playing';
+  }
+  return 'play-button';
 });
 </script>
 

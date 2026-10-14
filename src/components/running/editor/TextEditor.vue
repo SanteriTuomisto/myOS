@@ -12,34 +12,40 @@
   </div>
 </template>
 
-<script>
-import SaveIcon from '@/assets/SaveIcon.vue';
+<script setup lang="ts">
+import { onMounted, useTemplateRef } from 'vue';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
+import SaveIcon from '@/assets/SaveIcon.vue';
+import { useApplicationsStore } from '@/stores/applications';
+import { useFileSystemStore } from '@/stores/fileSystem';
 
-export default {
-  components: {
-    SaveIcon,
-  },
-  props: {
-    id: Number,
-    fileSystemId: Number,
-  },
-  mounted() {
-    // Kept off data() so Vue doesn't make the Quill instance reactive
-    this.quill = new Quill(this.$refs.editor, { theme: 'snow' });
-    const fileSystemItem = this.$store.getters.getItem(this.fileSystemId);
-    if (fileSystemItem && fileSystemItem.data) {
-      this.quill.clipboard.dangerouslyPasteHTML(fileSystemItem.data);
-    }
-  },
-  methods: {
-    savebtn() {
-      this.$store.dispatch('closeApplication', this.id);
-      this.$store.dispatch('saveFileContent', { id: this.fileSystemId, text: this.quill.root.innerHTML });
-    },
-  },
-};
+const props = defineProps<{
+  id: number;
+  fileSystemId?: number;
+}>();
+
+const applications = useApplicationsStore();
+const fileSystem = useFileSystemStore();
+
+const editorEl = useTemplateRef<HTMLDivElement>('editor');
+// A plain variable, so Vue doesn't make the Quill instance reactive
+let quill: Quill | undefined;
+
+onMounted(() => {
+  quill = new Quill(editorEl.value!, { theme: 'snow' });
+  const text = props.fileSystemId != null ? fileSystem.getFileContent(props.fileSystemId) : undefined;
+  if (text) {
+    quill.clipboard.dangerouslyPasteHTML(text);
+  }
+});
+
+function savebtn() {
+  if (quill && props.fileSystemId != null) {
+    fileSystem.saveFileContent(props.fileSystemId, quill.root.innerHTML);
+  }
+  applications.closeApplication(props.id);
+}
 </script>
 
 <style lang="scss" scoped>

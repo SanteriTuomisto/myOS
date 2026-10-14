@@ -14,27 +14,17 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
+import { ref } from 'vue';
 import FightView from './FightView.vue';
 
-export default defineComponent({
-  components: {
-    FightView,
-  },
-  data(): {
-    view: string;
-  } {
-    return {
-      view: 'main',
-    };
-  },
-  methods: {
-    changeView(view: string) {
-      this.view = view;
-    }
-  },
-});
+type View = 'main' | 'shop' | 'gear' | 'fight';
+
+const view = ref<View>('main');
+
+function changeView(newView: View) {
+  view.value = newView;
+}
 </script>
 
 <style scoped lang="scss">

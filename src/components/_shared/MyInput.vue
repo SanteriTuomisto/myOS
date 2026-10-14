@@ -7,39 +7,31 @@
   />
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
+import { computed } from 'vue';
 
-export default defineComponent({
-  emits: ['update:modelValue', 'input'],
-  props: {
-    modelValue: {
-      type: String,
-    },
-    value: {
-      type: String,
-      default: '',
-    },
-    type: {
-      type: String,
-      default: 'text',
-    },
-  },
-  methods: {
-    input(event: any) {
-      this.$emit('update:modelValue', event.target.value);
-      this.$emit('input', event.target.value);
-    },
-  },
-  computed: {
-    getValue() {
-      if (this.modelValue != undefined) {
-        return this.modelValue;
-      }
-      return this.value;
-    },
-  },
+const props = withDefaults(defineProps<{
+  modelValue?: string;
+  value?: string;
+  type?: string;
+}>(), {
+  modelValue: undefined,
+  value: '',
+  type: 'text',
 });
+
+const emit = defineEmits<{
+  'update:modelValue': [value: string];
+  input: [value: string];
+}>();
+
+const getValue = computed(() => props.modelValue ?? props.value);
+
+function input(event: Event) {
+  const value = (event.target as HTMLInputElement).value;
+  emit('update:modelValue', value);
+  emit('input', value);
+}
 </script>
 
 <style lang="scss" scoped>

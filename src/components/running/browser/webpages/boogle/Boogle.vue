@@ -41,37 +41,23 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
+import { ref } from 'vue';
 import BoogleLogo from './BoogleLogo.vue';
 
-export default defineComponent({
-  components: {
-    BoogleLogo,
-  },
-  data(): {
-    value: string;
-    searchOpen: boolean;
-    searchedWord: string;
-  } {
-    return {
-      value: '',
-      searchOpen: false,
-      searchedWord: '',
-    };
-  },
-  methods: {
-    searchAction(searchValue: string) {
-      if (searchValue !== '') {
-        this.searchOpen = true;
-        this.searchedWord = searchValue;
-      } else {
-        this.searchOpen = false;
-        this.searchedWord = '';
-      }
-    },
-  },
-});
+const value = ref('');
+const searchOpen = ref(false);
+const searchedWord = ref('');
+
+function searchAction(searchValue: string) {
+  if (searchValue !== '') {
+    searchOpen.value = true;
+    searchedWord.value = searchValue;
+  } else {
+    searchOpen.value = false;
+    searchedWord.value = '';
+  }
+}
 </script>
 
 <style scoped lang="scss">

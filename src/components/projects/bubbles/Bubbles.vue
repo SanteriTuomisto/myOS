@@ -4,10 +4,6 @@
   </section>
 </template>
 
-<script>
-export default {};
-</script>
-
 <style lang="scss" scoped>
 // https://cssanimation.rocks/spheres/
 

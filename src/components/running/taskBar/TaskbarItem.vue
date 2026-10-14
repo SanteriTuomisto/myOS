@@ -7,48 +7,24 @@
   </div>
 </template>
 
-<script>
-import { mapGetters } from 'vuex';
+<script setup lang="ts">
+import { computed } from 'vue';
+import { storeToRefs } from 'pinia';
+import type { Application } from '@/types';
+import { useApplicationsStore } from '@/stores/applications';
 
-export default {
-  props: {
-    id: {
-      type: Number,
-      required: true,
-    },
-    app: {
-      type: Object,
-    },
-  },
-  created() {
-    const activeId = this.getActiveWindowId;
-    this.active = activeId === this.id;
-  },
-  data() {
-    return {
-      active: false,
-    };
-  },
-  methods: {
-    setActive() {
-      if (this.active) {
-        this.$store.dispatch('setActiveWindowId', null);
-      } else {
-        this.$store.dispatch('setActiveWindowId', this.id);
-      }
-    },
-  },
-  computed: {
-    ...mapGetters({  
-      getActiveWindowId: 'getActiveWindowId',
-    }),
-  },
-  watch: {
-    getActiveWindowId(activeId) {
-      this.active = activeId === this.id;
-    },
-  },
-};
+const props = defineProps<{
+  app: Application;
+}>();
+
+const applications = useApplicationsStore();
+const { activeWindowId } = storeToRefs(applications);
+
+const active = computed(() => activeWindowId.value === props.app.id);
+
+function setActive() {
+  applications.setActiveWindow(active.value ? null : props.app.id);
+}
 </script>
 
 <style scoped lang="scss">

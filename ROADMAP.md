@@ -11,6 +11,10 @@ Everything we want to do with myOS: ideas, todos and known bugs. Check items off
 
 - [ ] Mobile: windows opened at desktop size hang off a phone screen. They need a mobile layout, e.g. always maximized.
 - [ ] Recycle Bin opens an empty window.
+- [ ] Music player: songs go in `src/assets/music/`, which doesn't exist yet; a failed `audio.play()` isn't handled.
+- [ ] On reload, the last window to mount becomes active instead of the saved active window.
+- [ ] Browser URL bar keeps typed text after going back to the same page.
+- [ ] Monster Slayer: attack/special/heal never roll their top value (e.g. 5–11 instead of 5–12), special attack is usable in round 1, heal caps at 100 instead of starting health, the shop and gear views are empty.
 
 ## Nice-to-have features
 
@@ -45,8 +49,10 @@ Everything we want to do with myOS: ideas, todos and known bugs. Check items off
 
 ## Tech debt
 
-- [ ] Move from Vuex (maintenance mode) to Pinia
-- [ ] Convert remaining plain-JS components to TypeScript
+- [x] Move from Vuex to Pinia
+- [x] Convert all components to `<script setup lang="ts">`
+- [x] Tests for every store and component (Vitest + Vue Test Utils)
+- [ ] End-to-end tests for the main flows (Playwright)
 - [ ] Code that only works on desktop: windows, drag and resize need touch/mobile handling
 
 ## Done

@@ -22,7 +22,7 @@
       </section>
       <section id="controls" v-else>
         <button @click="attackMonster">ATTACK</button>
-        <button :disabled="mayUseSpecialAttack" @click="specialAttackMonster">SPECIAL ATTACK</button>
+        <button :disabled="!mayUseSpecialAttack" @click="specialAttackMonster">SPECIAL ATTACK</button>
         <button @click="healPlayer">HEAL</button>
         <button @click="surrender">SURRENDER</button>
       </section>
@@ -47,129 +47,33 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { computed, reactive } from 'vue';
+import * as fight from './fight';
 
-function getRandomValue(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min)) + min;
+const props = defineProps<{
+  startPlayerHealth: number;
+  startMonsterHealth: number;
+}>();
+
+const state = reactive(fight.createFight(props.startPlayerHealth, props.startMonsterHealth));
+
+const playerHealth = computed(() => state.playerHealth);
+const monsterHealth = computed(() => state.monsterHealth);
+const winner = computed(() => state.winner);
+const logMessages = computed(() => state.logMessages);
+const playerBarStyles = computed(() => fight.healthBarStyle(state.playerHealth));
+const monsterBarStyles = computed(() => fight.healthBarStyle(state.monsterHealth));
+const mayUseSpecialAttack = computed(() => fight.canUseSpecialAttack(state));
+
+function startGame() {
+  Object.assign(state, fight.createFight(props.startPlayerHealth, props.startMonsterHealth));
 }
 
-export default defineComponent({
-  props: {
-    startPlayerHealth: {
-      required: true,
-      type: Number,
-    },
-    startMonsterHealth: {
-      required: true,
-      type: Number,
-    },
-  },
-  data(): {
-    playerHealth: number;
-    monsterHealth: number;
-    currentRound: number;
-    winner: string | null;
-    logMessages: {
-      actionBy: string,
-      actionType: string,
-      actionValue: number,
-    }[];
-  } {
-    return {
-      playerHealth: this.startPlayerHealth,
-      monsterHealth: this.startMonsterHealth,
-      currentRound: 0,
-      winner: null,
-      logMessages: [],
-    };
-  },
-  methods: {
-    startGame() {
-      this.playerHealth = this.startPlayerHealth;
-      this.monsterHealth = this.startMonsterHealth;
-      this.winner = null;
-      this.currentRound = 0;
-      this.logMessages = [];
-    },
-    attackMonster() {
-      this.currentRound++;
-      const attackValue = getRandomValue(5, 12);
-      this.monsterHealth -= attackValue;
-      this.addLogMessage('player', 'attack', attackValue);
-      this.attackPlayer();
-    },
-    attackPlayer() {
-      const attackValue = getRandomValue(5, 12);
-      this.addLogMessage('monster', 'attack', attackValue);
-      this.playerHealth -= attackValue;
-    },
-    specialAttackMonster() {
-      this.currentRound++;
-      const attackValue = getRandomValue(10, 25);
-      this.addLogMessage('player', 'attack', attackValue);
-      this.monsterHealth -= attackValue;
-      this.attackPlayer();
-    },
-    healPlayer() {
-      this.currentRound++;
-      const healValue = getRandomValue(8, 20);
-      if (this.playerHealth + healValue > 100) {
-        this.playerHealth = 100;
-      }
-      else {
-        this.playerHealth += healValue;
-      }
-      this.addLogMessage('player', 'heal', healValue);
-      this.attackPlayer();
-    },
-    surrender() {
-      this.winner = 'monster';
-    },
-    addLogMessage(who: string, what: string, value: number) {
-      this.logMessages.unshift({
-        actionBy: who,
-        actionType: what,
-        actionValue: value
-      });
-    },
-  },
-  computed: {
-    monsterBarStyles() {
-      if (this.monsterHealth < 0) {
-        return { width: '0%' };
-      }
-      return { width: this.monsterHealth + '%' };
-    },
-    playerBarStyles() {
-      if (this.playerHealth < 0) {
-        return { width: '0%' };
-      }
-      return { width: this.playerHealth + '%' };
-    },
-    mayUseSpecialAttack() {
-      return this.currentRound % 3 !== 0;
-    }
-  },
-  watch: {
-    playerHealth(value) {
-      if(value <= 0 && this.monsterHealth <= 0) {
-        this.winner = 'draw';
-      } 
-      else if (value <= 0) {
-        this.winner = 'monster';
-      }
-    },
-    monsterHealth(value) {
-      if (value <= 0 && this.playerHealth <= 0) {
-        this.winner = 'draw';
-      }
-      else if (value <= 0) {
-        this.winner = 'player';
-      }
-    },
-  },
-});
+const attackMonster = () => fight.attackMonster(state);
+const specialAttackMonster = () => fight.specialAttackMonster(state);
+const healPlayer = () => fight.healPlayer(state);
+const surrender = () => fight.surrender(state);
 </script>
 
 <style scoped lang="scss">
