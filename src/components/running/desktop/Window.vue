@@ -49,7 +49,7 @@
         </div>
       </div>
       <div class="table-container">
-        <slot />
+        <slot :interactive="active && !interacting" />
       </div>
       <!-- <div class="drag-container-2">footer</div> -->
     </div>
@@ -109,6 +109,8 @@ const top = ref<Position['top']>(props.app.position?.top ?? `calc(50% - ${props.
 const active = computed(() => activeWindowId.value === props.app.id);
 const minimized = computed(() => props.app.minimized);
 const maximized = computed(() => props.app.maximized);
+// True during a drag or resize
+const interacting = ref(false);
 
 function updateApplicationToStore(changes: Partial<Pick<Application, 'minimized' | 'maximized'>> = {}) {
   applications.updateApplication(props.app.id, {
@@ -123,6 +125,7 @@ function eHandler(data: ResizableEvent) {
   if (!minimized.value) {
     applications.setActiveWindow(props.app.id);
   }
+  interacting.value = data.eventName.endsWith(':start') || data.eventName.endsWith(':move');
   width.value = data.width;
   height.value = data.height;
   left.value = data.left;

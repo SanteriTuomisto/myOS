@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 import type { Pinia } from 'pinia';
+import type { DefineComponent } from 'vue';
+import VueResizableModule from 'vue-resizable';
 import Window from '@/components/running/desktop/Window.vue';
 import { createTestPinia } from '../../../utils';
 import { useApplicationsStore } from '@/stores/applications';
 import type { Application } from '@/types';
+
+const VueResizable = 'default' in VueResizableModule ? VueResizableModule.default : VueResizableModule;
 
 describe('Window', () => {
   let pinia: Pinia;
@@ -118,5 +122,42 @@ describe('Window', () => {
 
     expect(applications.getApplicationById(app.id)?.minimized).toBe(true);
     expect(applications.activeWindowId).toBe(other.id);
+  });
+
+  describe('interactive slot prop', () => {
+    const mountWithSlotProp = (app: Application) => mount(Window, {
+      props: { app },
+      slots: { default: `<template #default="{ interactive }"><p class="content">{{ interactive }}</p></template>` },
+      global: { plugins: [pinia] },
+    });
+    const resizableEvent = (eventName: string) => ({ eventName, left: 0, top: 0, width: 500, height: 350 });
+
+    it('is true only for the active window', async () => {
+      const first = applications.openApplication({ name: 'Synth', type: 'synth' });
+      const second = applications.openApplication({ name: 'Excavator', type: 'excavator' });
+      const firstWrapper = mountWithSlotProp(first);
+      const secondWrapper = mountWithSlotProp(second);
+
+      applications.setActiveWindow(second.id);
+      await firstWrapper.vm.$nextTick();
+
+      expect(firstWrapper.find('.content').text()).toBe('false');
+      expect(secondWrapper.find('.content').text()).toBe('true');
+    });
+
+    it('is false while the window is dragged or resized', async () => {
+      const app = applications.openApplication({ name: 'Synth', type: 'synth' });
+      const wrapper = mountWithSlotProp(app);
+      const resizable = wrapper.findComponent(VueResizable as DefineComponent);
+
+      for (const [eventName, expected] of [
+        ['drag:start', 'false'], ['drag:move', 'false'], ['drag:end', 'true'],
+        ['resize:start', 'false'], ['resize:end', 'true'],
+      ]) {
+        resizable.vm.$emit(eventName, resizableEvent(eventName));
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find('.content').text(), eventName).toBe(expected);
+      }
+    });
   });
 });

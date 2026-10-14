@@ -12,22 +12,27 @@
       </DesktopItem>
     </div>
     <Window
-      v-for="app, index in applications" :key="app.id"
+      v-for="{ app, definition, index } in windows" :key="app.id"
+      v-slot="{ interactive }"
       :app="app"
       :index="index"
-      :hideBottomBorder="app.type === 'fileExplorer' || app.type === 'browser'"
-      :minW="windowMinWidth(app.type)"
-      :minH="app.type === 'fileExplorer' ? 350 : 250"
-      :initHeight="applicationsStore.getWindowSize(app.type).height"
-      :initWidth="applicationsStore.getWindowSize(app.type).width"
+      :hideBottomBorder="definition.hideBottomBorder"
+      :minW="definition.minSize.width"
+      :minH="definition.minSize.height"
+      :initHeight="applicationsStore.getWindowSize(app.type, definition.defaultSize).height"
+      :initWidth="applicationsStore.getWindowSize(app.type, definition.defaultSize).width"
     >
-      <FileExplorer v-if="app.type === 'fileExplorer'" :fileSystemId="app.fileSystemId" />
-      <MusicPlayer v-if="app.type === 'musicPlayer'" />
-      <Browser v-if="app.type === 'browser'" />
-      <TextEditor v-if="app.type === 'file'" :id="app.id" :fileSystemId="app.fileSystemId" />
-      <TerminalWindow v-if="app.type === 'terminal'" />
-      <SettingsWindow v-if="app.type === 'settings'" />
-      <MonsterSlayer v-if="app.type === 'monsterSlayer'" />
+      <ExternalApp
+        v-if="definition.kind === 'external'"
+        :url="definition.url"
+        :name="app.name"
+        :interactive="interactive"
+      />
+      <component
+        :is="definition.component"
+        v-else-if="definition.component"
+        v-bind="definition.props?.(app)"
+      />
     </Window>
   </div>
   <div class="desktop-background"
@@ -41,24 +46,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue';
+import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
 import ItemIcon from '@/components/_shared/ItemIcon.vue';
 import Window from './Window.vue';
 import DesktopItem from './DesktopItem.vue';
-import FileExplorer from '../fileExplorer/FileExplorer.vue';
-import Browser from '../browser/Browser.vue';
-import MusicPlayer from '../musicPlayer/MusicPlayer.vue';
-import TerminalWindow from '../terminal/TerminalWindow.vue';
-import SettingsWindow from '../settings/SettingsWindow.vue';
-import MonsterSlayer from '@/components/projects/monsterSlayer/MonsterSlayer.vue';
-import type { AppType, FileSystemItem } from '@/types';
+import ExternalApp from './ExternalApp.vue';
+import type { FileSystemItem } from '@/types';
+import { getApp } from '@/apps/registry';
 import { useApplicationsStore } from '@/stores/applications';
 import { useFileSystemStore } from '@/stores/fileSystem';
 import { useSettingsStore } from '@/stores/settings';
-
-// Lazy so the editor library loads only when a file is opened
-const TextEditor = defineAsyncComponent(() => import('../editor/TextEditor.vue'));
 
 const applicationsStore = useApplicationsStore();
 const fileSystem = useFileSystemStore();
@@ -67,6 +65,12 @@ const { background } = storeToRefs(useSettingsStore());
 
 const desktopItems = computed(() => fileSystem.getTopLevelFolder('Desktop'));
 
+// Apps whose id is no longer in the registry (e.g. from old saved state) get no window
+const windows = computed(() => applications.value.flatMap((app, index) => {
+  const definition = getApp(app.type);
+  return definition ? [{ app, definition, index }] : [];
+}));
+
 function openWindow(item: FileSystemItem) {
   applicationsStore.openApplication({
     name: item.name,
@@ -74,16 +78,6 @@ function openWindow(item: FileSystemItem) {
     type: item.type === 'folder' ? 'fileExplorer' : item.type,
     fileSystemId: item.id,
   });
-}
-
-function windowMinWidth(type: AppType) {
-  if (type === 'fileExplorer') {
-    return 450;
-  }
-  if (type === 'file') {
-    return 659;
-  }
-  return 400;
 }
 </script>
 
