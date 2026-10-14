@@ -3,6 +3,8 @@ import { mount } from '@vue/test-utils';
 import ItemIcon from '@/components/_shared/ItemIcon.vue';
 import FolderIcon from '@/assets/FolderIcon.vue';
 import TrashIcon from '@/assets/TrashIcon.vue';
+import SynthIcon from '@/assets/SynthIcon.vue';
+import ExcavatorIcon from '@/assets/ExcavatorIcon.vue';
 import type { ItemType } from '@/types';
 
 describe('ItemIcon', () => {
@@ -10,6 +12,8 @@ describe('ItemIcon', () => {
     ['folder', FolderIcon],
     ['fileExplorer', FolderIcon],
     ['recycleBin', TrashIcon],
+    ['synth', SynthIcon],
+    ['excavator', ExcavatorIcon],
   ])('renders the right icon for %s', (type, icon) => {
     const wrapper = mount(ItemIcon, { props: { type } });
 

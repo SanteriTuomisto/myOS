@@ -56,8 +56,9 @@ export const useApplicationsStore = defineStore('applications', () => {
     return applications.value.find((app) => app.id === id);
   }
 
-  function getWindowSize(type: AppType): Size {
-    return windowSizes.value[type] ?? DEFAULT_WINDOW_SIZE;
+  /** Last used size of the app's window, or `defaultSize` if it hasn't been opened yet. */
+  function getWindowSize(type: AppType, defaultSize: Size = DEFAULT_WINDOW_SIZE): Size {
+    return windowSizes.value[type] ?? defaultSize;
   }
 
   return {

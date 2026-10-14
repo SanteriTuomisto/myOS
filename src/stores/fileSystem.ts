@@ -31,6 +31,8 @@ const defaultItems = (): FileSystemItem[] => [
       { id: 9, type: 'fileExplorer', name: 'Files' },
       { id: 10, type: 'terminal', name: 'Terminal' },
       { id: 11, type: 'settings', name: 'Settings' },
+      { id: 21, type: 'synth', name: 'Synth' },
+      { id: 22, type: 'excavator', name: 'Excavator' },
     ],
   },
   {
@@ -45,6 +47,8 @@ const defaultItems = (): FileSystemItem[] => [
       { id: 17, type: 'terminal', name: 'Terminal' },
       { id: 18, type: 'settings', name: 'Settings' },
       { id: 19, type: 'monsterSlayer', name: 'Monster Slayer' },
+      { id: 23, type: 'synth', name: 'Synth' },
+      { id: 24, type: 'excavator', name: 'Excavator' },
     ],
   },
   { id: 1, type: 'browser', name: 'Browser' },
@@ -53,7 +57,7 @@ const defaultItems = (): FileSystemItem[] => [
 ];
 
 export const useFileSystemStore = defineStore('fileSystem', () => {
-  const nextFileId = ref(21);
+  const nextFileId = ref(25);
   const items = ref<FileSystemItem[]>(defaultItems());
   const fileData = ref<Record<number, string>>({});
 

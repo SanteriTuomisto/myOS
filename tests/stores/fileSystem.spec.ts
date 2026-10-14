@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { ROOT_PATH, useFileSystemStore } from '@/stores/fileSystem';
 import type { FileSystemItem } from '@/types';
+import { isAppType } from '@/apps/registry';
 
 const allIds = (items: FileSystemItem[]): number[] =>
   items.flatMap((item) => [item.id, ...allIds(item.content ?? [])]);
@@ -17,6 +18,23 @@ describe('fileSystem store', () => {
 
     expect(new Set(ids).size).toBe(ids.length);
     expect(Math.max(...ids)).toBeLessThan(fs.nextFileId);
+  });
+
+  it('only holds folders and app ids from the registry', () => {
+    const fs = useFileSystemStore();
+    const types = (items: FileSystemItem[]): string[] =>
+      items.flatMap((item) => [item.type, ...types(item.content ?? [])]);
+
+    types(fs.items).forEach((type) => expect(type === 'folder' || isAppType(type), type).toBe(true));
+  });
+
+  it('has the external apps on the desktop and in the start menu', () => {
+    const fs = useFileSystemStore();
+
+    for (const folder of ['Desktop', 'Start Menu']) {
+      const types = fs.getTopLevelFolder(folder).map((item) => item.type);
+      expect(types).toEqual(expect.arrayContaining(['synth', 'excavator']));
+    }
   });
 
   it('resolves folder contents by path', () => {
@@ -62,8 +80,8 @@ describe('fileSystem store', () => {
     const folder = fs.addItem(desktop, 'folder', 'Folder 1');
     const file = fs.addItem([...desktop, { id: folder!.id, name: 'Folder 1' }], 'file', 'Text 1');
 
-    expect(folder).toMatchObject({ id: 21, type: 'folder', content: [file] });
-    expect(file).toMatchObject({ id: 22, type: 'file', name: 'Text 1' });
+    expect(folder).toMatchObject({ id: 25, type: 'folder', content: [file] });
+    expect(file).toMatchObject({ id: 26, type: 'file', name: 'Text 1' });
     expect(file).not.toHaveProperty('content');
     expect(fs.getTopLevelFolder('Desktop')).toContainEqual(folder);
   });
@@ -80,7 +98,7 @@ describe('fileSystem store', () => {
     const fs = useFileSystemStore();
 
     expect(fs.addItem([...ROOT_PATH, { id: 999, name: 'Gone' }], 'file', 'Text')).toBeUndefined();
-    expect(fs.nextFileId).toBe(21);
+    expect(fs.nextFileId).toBe(25);
   });
 
   it('picks the first free numbered name, ignoring case', () => {

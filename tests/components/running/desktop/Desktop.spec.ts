@@ -1,8 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { flushPromises, mount } from '@vue/test-utils';
 import type { Pinia } from 'pinia';
 import Desktop from '@/components/running/desktop/Desktop.vue';
 import DesktopItem from '@/components/running/desktop/DesktopItem.vue';
+import ExternalApp from '@/components/running/desktop/ExternalApp.vue';
+import { apps } from '@/apps/registry';
+import type { AppType } from '@/types';
 import { createTestPinia } from '../../../utils';
 import { useApplicationsStore } from '@/stores/applications';
 import { useFileSystemStore } from '@/stores/fileSystem';
@@ -10,20 +13,21 @@ import { useSettingsStore } from '@/stores/settings';
 
 const WindowStub = {
   props: ['app', 'index', 'hideBottomBorder', 'minW', 'minH', 'initWidth', 'initHeight'],
-  template: '<div class="window-stub"><slot /></div>',
+  template: '<div class="window-stub"><slot :interactive="true" /></div>',
 };
 
-const TextEditorStub = {
+// The registry loads the editor lazily, so it's mocked instead of stubbed by name
+const TextEditorStub = vi.hoisted(() => ({
   props: ['id', 'fileSystemId'],
   template: '<div class="text-editor-stub" />',
-};
+}));
+vi.mock('@/components/running/editor/TextEditor.vue', () => ({ __esModule: true, default: TextEditorStub }));
 
 const stubs = {
   Window: WindowStub,
   FileExplorer: true,
   MusicPlayer: true,
   Browser: true,
-  TextEditor: TextEditorStub,
   TerminalWindow: true,
   SettingsWindow: true,
   MonsterSlayer: true,
@@ -107,12 +111,45 @@ describe('Desktop', () => {
     expect(wrapper.findAllComponents(WindowStub)).toHaveLength(1);
   });
 
-  it('passes the app and file ids to the text editor', () => {
+  it('passes the app and file ids to the text editor', async () => {
     const applications = useApplicationsStore();
     applications.openApplication({ name: 'Text', type: 'file', fileSystemId: 4 });
     const wrapper = mountDesktop();
+    await flushPromises();
 
     expect(wrapper.findComponent(TextEditorStub).props()).toMatchObject({ id: 0, fileSystemId: 4 });
+  });
+
+  it('opens external apps in an iframe window with their registry sizes', async () => {
+    const wrapper = mountDesktop();
+
+    const synth = wrapper.findAllComponents(DesktopItem).find((item) => item.text() === 'Synth')!;
+    await synth.trigger('dblclick');
+
+    const window = wrapper.findComponent(WindowStub);
+    expect(window.props()).toMatchObject({
+      minW: apps.synth.minSize.width,
+      minH: apps.synth.minSize.height,
+      initWidth: apps.synth.defaultSize.width,
+      initHeight: apps.synth.defaultSize.height,
+      hideBottomBorder: undefined,
+    });
+    expect(wrapper.findComponent(ExternalApp).props()).toEqual({
+      url: apps.synth.url,
+      name: 'Synth',
+      interactive: true,
+    });
+  });
+
+  it('skips open apps whose id is no longer in the registry', () => {
+    const applications = useApplicationsStore();
+    applications.openApplication({ name: 'Old app', type: 'removedApp' as AppType });
+    applications.openApplication({ name: 'Terminal', type: 'terminal' });
+    const wrapper = mountDesktop();
+
+    const windows = wrapper.findAllComponents(WindowStub);
+    expect(windows).toHaveLength(1);
+    expect(windows[0].props('index')).toBe(1);
   });
 
   it('uses the background from the settings', async () => {

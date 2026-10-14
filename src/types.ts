@@ -1,12 +1,7 @@
-export type AppType =
-  | 'file'
-  | 'fileExplorer'
-  | 'browser'
-  | 'recycleBin'
-  | 'musicPlayer'
-  | 'terminal'
-  | 'settings'
-  | 'monsterSlayer';
+import type { AppType } from '@/apps/registry';
+
+// App ids come from the app registry
+export type { AppType };
 
 export type ItemType = AppType | 'folder';
 

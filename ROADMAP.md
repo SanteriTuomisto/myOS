@@ -4,8 +4,9 @@ Everything we want to do with myOS: ideas, todos and known bugs. Check items off
 
 ## Next up
 
-- [ ] **App registry**: one central list of apps (component, icon, name, window size) instead of hardcoded if/else chains in Desktop, StartMenu and FileExplorer. Everything below that adds an app or icon builds on this.
-- [ ] **External apps**: projects from other repos run as iframe windows, listed in the registry by URL. Later: a postMessage bridge so apps can set their title, close their window, and read/write myOS files.
+- [x] **App registry**: one central list of apps (component, icon, name, window size) instead of hardcoded if/else chains in Desktop, StartMenu and FileExplorer. Everything below that adds an app or icon builds on this.
+- [x] **External apps**: projects from other repos run as iframe windows, listed in the registry by URL (see `docs/external-apps.md`)
+- [ ] **postMessage bridge** for external apps so apps can set their title, close their window, and read/write myOS files (sketch in `docs/external-apps.md`)
 
 ## Known bugs
 
@@ -18,7 +19,7 @@ Everything we want to do with myOS: ideas, todos and known bugs. Check items off
 
 ## Nice-to-have features
 
-- [ ] Nicer icons: no hardcoded if/else in Start menu, Desktop and File Explorer (covered by the app registry)
+- [x] Nicer icons: no hardcoded if/else in Start menu, Desktop and File Explorer (covered by the app registry)
 - [ ] Protect certain folders and files from being deleted (e.g. Desktop, Start Menu, My Computer)
 - [ ] Clicking a taskbar item hides/shows the window, the same as the window's `_` button
 - [ ] File Explorer: drag-and-drop item ordering
@@ -29,8 +30,8 @@ Everything we want to do with myOS: ideas, todos and known bugs. Check items off
 ## New apps
 
 ### From my other repos (iframe apps)
-- [ ] Analog synth simulator (synth repo)
-- [ ] 3D excavator (3d-machine-viewer repo), also the three.js / Blender demo
+- [ ] Analog synth simulator (synth repo): in myOS at https://santerituomisto.github.io/synth/, live once the deploy workflow (SanteriTuomisto/synth#1) is merged
+- [ ] 3D excavator (3d-machine-viewer repo), also the three.js / Blender demo: in myOS at https://santerituomisto.github.io/3d-machine-viewer/, live once SanteriTuomisto/3d-machine-viewer#1 is merged
 
 ### Built into myOS
 - [ ] **Task manager / Ctrl+Alt+Del**: fake CPU, GPU, network and memory graphs, a list of running apps, and closing them from there
