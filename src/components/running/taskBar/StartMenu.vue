@@ -4,7 +4,7 @@
       v-for="(item, index) in getStartMenuItems"
       :key="index"
       :text="item.name"
-      @click="openWindow(item.name, item.type)"
+      @click="openWindow(item)"
     >
       <BrowserIcon v-if="item.type === 'browser'" class="icon" />
       <MusicIcon v-else-if="item.type === 'musicPlayer'" class="icon" />
@@ -30,7 +30,7 @@ import MusicIcon from '@/assets/MusicIcon.vue';
 import BrowserIcon from '@/assets/BrowserIcon.vue';
 import SettingsIcon from '@/assets/SettingsIcon.vue';
 import StartMenuItem from './StartMenuItem.vue';
-import { Item, ApplicationType } from '@/store/fileSystem';
+import { Item } from '@/store/fileSystem';
 
 export default defineComponent({
   components: {
@@ -53,10 +53,12 @@ export default defineComponent({
     powerOff() {
       this.$store.dispatch('togglePower');
     },
-    openWindow(name: string, type: ApplicationType) {
+    openWindow(item: Item) {
       const application = {
-        name,
-        type,
+        name: item.name,
+        // Folders open in the file explorer
+        type: item.type === 'folder' ? 'fileExplorer' : item.type,
+        fileSystemId: item.id,
       };
       this.$store.dispatch('openApplication', application);
     },

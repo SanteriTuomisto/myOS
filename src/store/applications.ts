@@ -14,12 +14,13 @@ interface Size {
 
 export interface Application {
   id: number;
+  name: string;
   type: ApplicationType;
   position: Position;
   minimized: boolean;
   maximized: boolean;
   size: Size;
-  fileSystemId: number;
+  fileSystemId?: number;
 }
 
 interface State {
@@ -56,7 +57,7 @@ const mutations = {
   closeApplicationMutation(state: State, id: number) {
     state.applications = state.applications.filter(app => app.id !== id); 
   },
-  setActiveWindowIdMutation(state: State, id: number) {
+  setActiveWindowIdMutation(state: State, id: number | null) {
     state.activeWindowId = id;
   },
   saveWindowSizeMutation(state: State, { type, size }: { type: ApplicationType, size: Size }) {
@@ -91,18 +92,8 @@ const actions = {
     });
   },
   selectOtherActiveWindow(context: ActionContext<State, any>) {
-    const applications = context.state.applications;
-    if (applications.length > 0) {
-      for (let i = applications.length; i >= 0; i -= 1) {
-        const app = applications[i];
-        if (app && app.minimized != null && app.minimized === false) {
-          context.commit('setActiveWindowIdMutation', app.id);
-          i = -1;
-        }
-      }
-    } else {
-      context.commit('setActiveWindowIdMutation', null);
-    }
+    const visibleApp = [...context.state.applications].reverse().find(app => app.minimized === false);
+    context.commit('setActiveWindowIdMutation', visibleApp ? visibleApp.id : null);
   },
 };
 

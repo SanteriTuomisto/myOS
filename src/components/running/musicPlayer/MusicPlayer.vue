@@ -80,7 +80,7 @@ export default defineComponent({
         this.isPlaying = false;
       }
       this.currentSong = song;
-      this.currentSongEl = new Audio(require(`@/assets/music/${song.filename}`));
+      this.currentSongEl = new Audio(new URL(`../../../assets/music/${song.filename}`, import.meta.url).href);
     },
     play() {
       if (!this.currentSongEl) {

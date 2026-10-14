@@ -29,7 +29,6 @@
 </template>
 
 <script>
-import moment from 'moment';
 import { mapGetters } from 'vuex';
 import WifiIcon from '@/assets/WifiIcon.vue';
 import StartMenu from './StartMenu.vue';
@@ -61,8 +60,8 @@ export default {
   },
   methods: {
     getDate() {
-      // this.date = moment().format('D.M.YYYY');
-      this.time = moment().format('H:mm');
+      const now = new Date();
+      this.time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
     },
     startButtonClick() {
       this.$store.dispatch('toggleStartMenu');
@@ -89,6 +88,7 @@ export default {
 
 <style scoped lang="scss">
   #taskbar {
+    flex-shrink: 0;
     height: 42px;
     width: 100%;
     background-color: #8080ff;

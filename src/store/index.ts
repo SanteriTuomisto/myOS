@@ -13,11 +13,23 @@ interface State {
 }
 
 const state: State = {
-  version: '1.0.4',
+  version: __APP_VERSION__,
   powerOn: false,
   startup: false,
   showStartMenu: false,
 };
+
+const PERSIST_KEY = 'myOs-persist-store';
+
+// Drop persisted state from another version before it gets restored, so new defaults take effect
+try {
+  const saved = JSON.parse(localStorage.getItem(PERSIST_KEY) || 'null');
+  if (saved && saved.version !== __APP_VERSION__) {
+    localStorage.removeItem(PERSIST_KEY);
+  }
+} catch {
+  localStorage.removeItem(PERSIST_KEY);
+}
 
 export const store = createStore({
   state,
@@ -30,9 +42,6 @@ export const store = createStore({
     },
     setStartMenuMutation(state: State) {
       state.showStartMenu = !state.showStartMenu;
-    },
-    setVersionMutation(state: State, version: string) {
-      state.version = version;
     },
   },
   actions: {
@@ -51,9 +60,6 @@ export const store = createStore({
     toggleStartup({ commit }) {
       commit('setStartupMutation');
     },
-    setVersion({ commit }, version: string) {
-      commit('setVersionMutation', version);
-    },
   },
   modules: {
     applications,
@@ -61,5 +67,5 @@ export const store = createStore({
     browser,
     settings,
   },
-  plugins: [new VuexPersistence({ key: 'myOs-persist-store' }).plugin],
+  plugins: [new VuexPersistence({ key: PERSIST_KEY }).plugin],
 });

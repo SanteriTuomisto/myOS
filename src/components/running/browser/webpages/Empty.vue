@@ -21,9 +21,10 @@ import {
 } from '@/store/browser';
 
 export default defineComponent({
+  emits: ['navigate'],
   methods: {
     navigate(network: NetworkItem) {
-      this.$store.dispatch('browserTryToNavigate', network.url);
+      this.$emit('navigate', network.url);
     },
   },
   computed: {

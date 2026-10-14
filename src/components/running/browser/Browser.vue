@@ -17,7 +17,7 @@
         <Bacefook v-else-if="currentPage?.name === 'Bacefook'" />
         <DadGpt v-else-if="currentPage?.name === 'DadGPT'" />
         <myOs v-else-if="currentPage?.name === 'myOs'" />
-        <Empty v-else-if="currentPage == null || currentPage.name === '404'" />
+        <Empty v-else-if="currentPage == null || currentPage.name === '404'" @navigate="navigate" />
       </Scroller>
     </div>
   </div>
@@ -29,6 +29,8 @@ import { mapGetters } from 'vuex';
 import Scroller from '@/components/_shared/Scroller.vue';
 import {
   NetworkItem,
+  boogle,
+  empty,
 } from '@/store/browser';
 import Boogle from './webpages/boogle/Boogle.vue';
 import Empty from './webpages/Empty.vue';
@@ -54,39 +56,35 @@ export default defineComponent({
   data(): {
     history: NetworkItem[];
   } {
+    // Each browser window keeps its own history
     return {
-      history: [],
+      history: [boogle],
     };
   },
   methods: {
     home() {
-      this.$store.dispatch('browserHome');
+      this.history = [boogle];
+    },
+    navigate(url: string) {
+      const page = this.getNetwork.find((n: NetworkItem) => n.url.toLocaleLowerCase() === url.toLocaleLowerCase());
+      this.history.push(page || empty);
     },
     urlBarEnter(event: any) {
-      const value = event.target.value;
-      this.$store.dispatch('browserTryToNavigate', value);
+      this.navigate(event.target.value);
     },
     backwards() {
-      this.$store.dispatch('browserBackwards');
+      this.history.pop();
     },
   },
   computed: {
     ...mapGetters({  
-      getBrowserHistory: 'getBrowserHistory',
+      getNetwork: 'getNetwork',
     }),
     currentPage(): NetworkItem {
       return this.history[this.history.length - 1];
     },
     currentUrl(): string {
       return this.history[this.history.length - 1]?.url || '';
-    },
-  },
-  watch: {
-    getBrowserHistory: {
-      handler(history) {
-        this.history = history;
-      },
-      immediate: true,
     },
   },
 });

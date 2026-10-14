@@ -6,7 +6,7 @@
         v-for="(item, index) in getDesktopItems"
         :key="index"
         :name="item.name"
-        @click="openWindow(item.name, item.type)"
+        @click="openWindow(item)"
       >
         <BrowserIcon v-if="item.type === 'browser'" />
         <MusicIcon v-else-if="item.type === 'musicPlayer'" />
@@ -29,7 +29,7 @@
       :initHeight="getWindowSize(app.type).height"
       :initWidth="getWindowSize(app.type).width"
     >
-      <FileExplorer v-if="app.type === 'fileExplorer'" />
+      <FileExplorer v-if="app.type === 'fileExplorer'" :fileSystemId="app.fileSystemId" />
       <MusicPlayer v-if="app.type === 'musicPlayer'" />
       <Browser v-if="app.type === 'browser'" />
       <TextEditor v-if="app.type === 'file'" :id="app.id" :fileSystemId="app.fileSystemId" />
@@ -49,7 +49,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineAsyncComponent, defineComponent } from 'vue';
 import { mapGetters } from 'vuex';
 import FolderIcon from '@/assets/FolderIcon.vue';
 import TerminalIcon from '@/assets/TerminalIcon.vue';
@@ -63,7 +63,6 @@ import DesktopItem from './DesktopItem.vue';
 import FileExplorer from '../fileExplorer/FileExplorer.vue';
 import Browser from '../browser/Browser.vue';
 import MusicPlayer from '../musicPlayer/MusicPlayer.vue';
-import TextEditor from '../editor/TextEditor.vue';
 import TerminalWindow from '../terminal/TerminalWindow.vue';
 import SettingsWindow from '../settings/SettingsWindow.vue';
 import MonsterIcon from '@/assets/MonsterIcon.vue';
@@ -84,7 +83,8 @@ export default defineComponent({
     FileExplorer,
     Browser,
     MusicPlayer,
-    TextEditor,
+    // Lazy so the editor library loads only when a file is opened
+    TextEditor: defineAsyncComponent(() => import('../editor/TextEditor.vue')),
     TerminalWindow,
     SettingsWindow,
     SettingsIcon,
@@ -102,10 +102,12 @@ export default defineComponent({
     this.applications = this.getApplications;
   },
   methods: {
-    openWindow(name: string, type: ApplicationType) {
+    openWindow(item: Item) {
       const application = {
-        name,
-        type,
+        name: item.name,
+        // Folders open in the file explorer
+        type: item.type === 'folder' ? 'fileExplorer' : item.type,
+        fileSystemId: item.id,
       };
       this.$store.dispatch('openApplication', application);
     },
@@ -150,7 +152,8 @@ export default defineComponent({
   }
 
   .desktop-background {
-    height: calc(100vh - 46px);
+    flex: 1 1 auto;
+    min-height: 0;
     width: 100%;
     background: rgb(0,124,128);
     display: flex;

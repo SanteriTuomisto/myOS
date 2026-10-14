@@ -81,6 +81,9 @@ export default {
     EditIcon,
     Scroller,
   },
+  props: {
+    fileSystemId: Number,
+  },
   data() {
     return {
       selectedItems: [],
@@ -90,7 +93,29 @@ export default {
       }],
     };
   },
+  created() {
+    const folderPath = this.findFolderPath(this.getFileSystemItems, this.fileSystemId);
+    if (folderPath) {
+      this.paths.push(...folderPath);
+    }
+  },
   methods: {
+    findFolderPath(items, id) {
+      for (const item of items) {
+        if (item.type !== 'folder') {
+          continue;
+        }
+        const pathItem = { name: item.name, id: item.id, content: item.content };
+        if (item.id === id) {
+          return [pathItem];
+        }
+        const subPath = this.findFolderPath(item.content || [], id);
+        if (subPath) {
+          return [pathItem, ...subPath];
+        }
+      }
+      return null;
+    },
     folderClick({ id, name, content }) {
       this.selectedItems = [];
       this.paths.push({ name, id, content });
