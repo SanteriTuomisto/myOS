@@ -11,35 +11,20 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { computed } from 'vue';
+import { storeToRefs } from 'pinia';
 import Desktop from './components/running/desktop/Desktop.vue';
 import Startup from './components/boot/Startup.vue';
 import ShutDown from './components/shutDown/ShutDown.vue';
 import Taskbar from './components/running/taskBar/Taskbar.vue';
+import { useSystemStore } from '@/stores/system';
 
-export default {
-  name: 'App',
-  components: {
-    Desktop,
-    Taskbar,
-    ShutDown,
-    Startup,
-  },
-  computed: {
-    shutDownState() {
-      if (import.meta.env.DEV) {
-        return true;
-      }
-      return this.$store.state.powerOn;
-    },
-    startupState() {
-      if (import.meta.env.DEV) {
-        return false;
-      }
-      return this.$store.state.startup;
-    },
-  },
-}
+const { powerOn, startup } = storeToRefs(useSystemStore());
+
+// In development, skip straight to the desktop
+const shutDownState = computed(() => import.meta.env.DEV || powerOn.value);
+const startupState = computed(() => !import.meta.env.DEV && startup.value);
 </script>
 
 <style>

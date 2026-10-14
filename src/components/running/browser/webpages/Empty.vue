@@ -14,25 +14,18 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
-import {
-  NetworkItem,
-} from '@/store/browser';
+<script setup lang="ts">
+import { network, notFound, type WebPage } from '../network';
 
-export default defineComponent({
-  emits: ['navigate'],
-  methods: {
-    navigate(network: NetworkItem) {
-      this.$emit('navigate', network.url);
-    },
-  },
-  computed: {
-    getNetwork(): NetworkItem[] {
-      return this.$store.getters['getNetwork'].filter((n: NetworkItem) => n.name !== '404');
-    },
-  },
-});
+const emit = defineEmits<{
+  navigate: [url: string];
+}>();
+
+const getNetwork = network.filter((page) => page !== notFound);
+
+function navigate(page: WebPage) {
+  emit('navigate', page.url);
+}
 </script>
 
 <style scoped lang="scss">

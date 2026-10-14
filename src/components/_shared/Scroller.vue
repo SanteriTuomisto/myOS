@@ -7,15 +7,11 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
-export default defineComponent({
-  props: {
-    scrollOn: {
-      type: Boolean,
-      default: true,
-    },
-  },
+<script setup lang="ts">
+withDefaults(defineProps<{
+  scrollOn?: boolean;
+}>(), {
+  scrollOn: true,
 });
 </script>
 

@@ -17,20 +17,17 @@
     "paths": {
       "@/*": [
         "./src/*"
-      ],
-      "vuex": [
-        "./node_modules/vuex/types/index.d.ts"
       ]
     },
     "lib": [
       "ES2022",
       "DOM",
       "DOM.Iterable"
-    ],
-    "allowJs": true
+    ]
   },
   "include": [
     "src/**/*.ts",
-    "src/**/*.vue"
+    "src/**/*.vue",
+    "tests/**/*.ts"
   ]
 }

@@ -15,27 +15,33 @@
   </div>
 </template>
 
-<script>
-export default {
-  mounted() {
+<script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue';
+import { useSystemStore } from '@/stores/system';
+
+const system = useSystemStore();
+const row2 = ref<string | null>(null);
+const row3 = ref<string | null>(null);
+const row4 = ref<string | null>(null);
+const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+onMounted(() => {
+  timeouts.push(
     setTimeout(() => {
-      this.row2 = `VERSION ${this.$store.state.version}`;
-    }, 700);
+      row2.value = `VERSION ${system.version}`;
+    }, 700),
     setTimeout(() => {
-      this.row3 = 'CPU: Intel (R) CPU 330';
-    }, 1400);
+      row3.value = 'CPU: Intel (R) CPU 330';
+    }, 1400),
     setTimeout(() => {
-      this.row4 = 'Booting from Hard Disk...';
-    }, 2100);
-  },
-  data() {
-    return {
-      row2: null,
-      row3: null,
-      row4: null,
-    };
-  },
-};
+      row4.value = 'Booting from Hard Disk...';
+    }, 2100),
+  );
+});
+
+onUnmounted(() => {
+  timeouts.forEach(clearTimeout);
+});
 </script>
 
 <style scoped lang="scss">

@@ -1,77 +1,53 @@
 <template>
   <div v-if="showStartMenu" id="menu">
     <StartMenuItem
-      v-for="(item, index) in getStartMenuItems"
-      :key="index"
+      v-for="item in startMenuItems"
+      :key="item.id"
       :text="item.name"
       @click="openWindow(item)"
     >
-      <BrowserIcon v-if="item.type === 'browser'" class="icon" />
-      <MusicIcon v-else-if="item.type === 'musicPlayer'" class="icon" />
-      <FolderIcon v-else-if="item.type === 'fileExplorer' || item.type === 'folder'" class="icon" />
-      <TerminalIcon v-else-if="item.type === 'terminal'" class="icon" />
-      <SettingsIcon v-else-if="item.type === 'settings'" class="icon" />
-      <FileIcon v-else-if="item.type === 'file'" class="icon" />
+      <ItemIcon :type="item.type" class="icon" />
     </StartMenuItem>
-    <StartMenuItem :id="2" text="Shut down" @click="powerOff">
+    <StartMenuItem text="Shut down" @click="powerOff">
       <PowerIcon class="icon" />
     </StartMenuItem>
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
-import { mapGetters } from 'vuex';
-import FolderIcon from '@/assets/FolderIcon.vue';
-import TerminalIcon from '@/assets/TerminalIcon.vue';
+<script setup lang="ts">
+import { computed } from 'vue';
 import PowerIcon from '@/assets/PowerIcon.vue';
-import FileIcon from '@/assets/FileIcon.vue';
-import MusicIcon from '@/assets/MusicIcon.vue';
-import BrowserIcon from '@/assets/BrowserIcon.vue';
-import SettingsIcon from '@/assets/SettingsIcon.vue';
+import ItemIcon from '@/components/_shared/ItemIcon.vue';
 import StartMenuItem from './StartMenuItem.vue';
-import { Item } from '@/store/fileSystem';
+import type { FileSystemItem } from '@/types';
+import { useSystemStore } from '@/stores/system';
+import { useApplicationsStore } from '@/stores/applications';
+import { useFileSystemStore } from '@/stores/fileSystem';
 
-export default defineComponent({
-  components: {
-    StartMenuItem,
-    FolderIcon,
-    TerminalIcon,
-    PowerIcon,
-    MusicIcon,
-    BrowserIcon,
-    SettingsIcon,
-    FileIcon,
-  },
-  props: {
-    showStartMenu: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  methods: {
-    powerOff() {
-      this.$store.dispatch('togglePower');
-    },
-    openWindow(item: Item) {
-      const application = {
-        name: item.name,
-        // Folders open in the file explorer
-        type: item.type === 'folder' ? 'fileExplorer' : item.type,
-        fileSystemId: item.id,
-      };
-      this.$store.dispatch('openApplication', application);
-    },
-  },
-  computed: {
-    ...mapGetters({  
-      getFileSystemItems: 'getFileSystemItems',
-    }),
-    getStartMenuItems() {
-      return this.getFileSystemItems.find((i: Item) => i.name === 'Start Menu')?.content || [];
-    },
-  },
+withDefaults(defineProps<{
+  showStartMenu?: boolean;
+}>(), {
+  showStartMenu: false,
 });
+
+const system = useSystemStore();
+const applications = useApplicationsStore();
+const fileSystem = useFileSystemStore();
+
+const startMenuItems = computed(() => fileSystem.getTopLevelFolder('Start Menu'));
+
+function powerOff() {
+  system.togglePower();
+}
+
+function openWindow(item: FileSystemItem) {
+  applications.openApplication({
+    name: item.name,
+    // Folders open in the file explorer
+    type: item.type === 'folder' ? 'fileExplorer' : item.type,
+    fileSystemId: item.id,
+  });
+}
 </script>
 
 <style scoped lang="scss">

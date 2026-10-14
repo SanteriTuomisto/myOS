@@ -10,9 +10,9 @@
       'inactive-full': !active && maximized,
     }"
     ref="resizableComponent"
-    :dragSelector="dragSelector"
+    dragSelector=".drag-container-1"
     :active="handlers"
-    :fit-parent="fit"
+    :fit-parent="true"
     :maximize="maximized"
     :min-width="minW"
     :min-height="minH"
@@ -56,156 +56,100 @@
   </vue-resizable>
 </template>
 
-<script>
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue';
+import { storeToRefs } from 'pinia';
 import VueResizableModule from 'vue-resizable';
-import { mapGetters } from 'vuex';
 import XIcon from '@/assets/XIcon.vue';
 import ExpandIcon from '@/assets/ExpandIcon.vue';
 import MinimizeIcon from '@/assets/MinimizeIcon.vue';
+import type { Application, Position } from '@/types';
+import { useApplicationsStore } from '@/stores/applications';
 
 // vue-resizable ships only a UMD build, whose default export ends up nested
-const VueResizable = VueResizableModule.default || VueResizableModule;
+const VueResizable = 'default' in VueResizableModule ? VueResizableModule.default : VueResizableModule;
 
-export default {
-  emits: ['click'],
-  components: {
-    VueResizable,
-    XIcon,
-    ExpandIcon,
-    MinimizeIcon,
-  },
-  props: {
-    id: Number,
-    app: Object,
-    index: Number,
-    hideBottomBorder: {
-      type: Boolean,
-      default: false,
-    },
-    minW: {
-      type: Number,
-      default: 400,
-    },
-    minH: {
-      type: Number,
-      default: 250,
-    },
-    initWidth: {
-      type: Number,
-      default: 500,
-    },
-    initHeight: {
-      type: Number,
-      default: 350,
-    },
-  },
-  created() {
-    const activeId = this.getActiveWindowId;
-    this.active = activeId === this.id;
-    this.updateAppFromStore(this.app);
-  },
-  mounted() {
-    this.updateApplicationToStore();
-  },
-  data() {
-    const tW = this.initWidth;
-    const tH = this.initHeight;
-    const offset = this.index * 20;
-    return {
-      minimized: false,
-      active: false,
-      handlers: ["r", "rb", "b", "lb", "l", "lt", "t", "rt"],
-      left: `calc(50% - ${tW / 2 - offset}px)`,
-      top: `calc(50% - ${tH / 2 - offset}px)`,
-      height: tH,
-      width: tW,
-      fit: true,
-      maximized: false,
-      event: "",
-      dragSelector: ".drag-container-1",
-    };
-  },
-  methods: {
-    eHandler(data) {
-      this.$store.dispatch('setActiveWindowId', this.id);
-      this.width = data.width;
-      this.height = data.height;
-      this.left = data.left;
-      this.top = data.top;
-      this.event = data.eventName;
-      if (data.eventName === 'drag:move') {
-        this.maximized = false;
-      }
-      this.updateApplicationToStore();
-    },
-    minimizeWindow() {
-      this.minimized = true;
-      this.updateApplicationToStore();
-      this.$store.dispatch('setActiveWindowId', null);
-    },
-    maximizeWindow() {
-      this.maximized = !this.maximized;
-      this.updateApplicationToStore();
-    },
-    closeWindow() {
-      this.$store.dispatch('closeApplication', this.id);
-    },
-    setActive() {
-      this.$store.dispatch('setActiveWindowId', this.id);
-    },
-    updateAppFromStore(app) {
-      if (app.position?.top != null && app.position?.left != null) {
-        this.top = app.position.top;
-        this.left = app.position.left;
-      }
-      if (app.size?.width != null && app.size?.height != null) {
-        this.width = app.size.width;
-        this.height = app.size.height;
-      }
-      if (app.minimized != null) {
-        this.minimized = app.minimized;
-      }
-      if (app.maximized != null) {
-        this.maximized = app.maximized;
-      }
-    },
-    updateApplicationToStore() {
-      this.$store.dispatch('updateApplication', {
-        id: this.id,
-        type: this.app.type,
-        minimized: this.minimized,
-        maximized: this.maximized,
-        position: {
-          top: this.top,
-          left: this.left,
-        },
-        size: {
-          width: this.width,
-          height: this.height,
-        }
-      }); 
-    },
-  },
-  computed: {
-    ...mapGetters({  
-      getActiveWindowId: 'getActiveWindowId',
-      getApplicationById: 'getApplicationById',
-    }),
-    getApp() {
-      return this.getApplicationById(this.id);
-    },
-  },
-  watch: {
-    getActiveWindowId(activeId) {
-      this.active = activeId === this.id;
-    },
-    getApp(app) {
-      if (app) {
-        this.updateAppFromStore(app);
-      }
-    },
-  },
-};
+interface ResizableEvent {
+  eventName: string;
+  left: Position['left'];
+  top: Position['top'];
+  width: number;
+  height: number;
+}
+
+const props = withDefaults(defineProps<{
+  app: Application;
+  index?: number;
+  hideBottomBorder?: boolean;
+  minW?: number;
+  minH?: number;
+  initWidth?: number;
+  initHeight?: number;
+}>(), {
+  index: 0,
+  hideBottomBorder: false,
+  minW: 400,
+  minH: 250,
+  initWidth: 500,
+  initHeight: 350,
+});
+
+const applications = useApplicationsStore();
+const { activeWindowId } = storeToRefs(applications);
+
+const handlers = ['r', 'rb', 'b', 'lb', 'l', 'lt', 't', 'rt'];
+const offset = props.index * 20;
+
+// Position and size are owned by vue-resizable while dragging, and pushed to the store after each change
+const width = ref(props.app.size?.width ?? props.initWidth);
+const height = ref(props.app.size?.height ?? props.initHeight);
+const left = ref<Position['left']>(props.app.position?.left ?? `calc(50% - ${props.initWidth / 2 - offset}px)`);
+const top = ref<Position['top']>(props.app.position?.top ?? `calc(50% - ${props.initHeight / 2 - offset}px)`);
+
+const active = computed(() => activeWindowId.value === props.app.id);
+const minimized = computed(() => props.app.minimized);
+const maximized = computed(() => props.app.maximized);
+
+function updateApplicationToStore(changes: Partial<Pick<Application, 'minimized' | 'maximized'>> = {}) {
+  applications.updateApplication(props.app.id, {
+    position: { top: top.value, left: left.value },
+    size: { width: width.value, height: height.value },
+    ...changes,
+  });
+}
+
+function eHandler(data: ResizableEvent) {
+  // A minimized window only gets the mount event (e.g. after a reload); keep it minimized
+  if (!minimized.value) {
+    applications.setActiveWindow(props.app.id);
+  }
+  width.value = data.width;
+  height.value = data.height;
+  left.value = data.left;
+  top.value = data.top;
+  updateApplicationToStore(data.eventName === 'drag:move' ? { maximized: false } : {});
+}
+
+function minimizeWindow() {
+  updateApplicationToStore({ minimized: true });
+  applications.setActiveWindow(null);
+}
+
+function maximizeWindow() {
+  updateApplicationToStore({ maximized: !maximized.value });
+}
+
+function closeWindow() {
+  applications.closeApplication(props.app.id);
+}
+
+function setActive() {
+  applications.setActiveWindow(props.app.id);
+}
+
+onMounted(() => {
+  updateApplicationToStore();
+});
 </script>
 
 <style scoped lang="scss">

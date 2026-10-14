@@ -23,15 +23,10 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
-import { mapGetters } from 'vuex';
+<script setup lang="ts">
+import { computed, ref } from 'vue';
 import Scroller from '@/components/_shared/Scroller.vue';
-import {
-  NetworkItem,
-  boogle,
-  empty,
-} from '@/store/browser';
+import { boogle, findPage, type WebPage } from './network';
 import Boogle from './webpages/boogle/Boogle.vue';
 import Empty from './webpages/Empty.vue';
 import Bacefook from './webpages/Bacefook.vue';
@@ -41,53 +36,27 @@ import HomeIcon from '@/assets/HomeIcon.vue';
 import ArrowLeft from '@/assets/ArrowLeft.vue';
 import MyInput from '@/components/_shared/MyInput.vue';
 
-export default defineComponent({
-  components: {
-    Boogle,
-    Empty,
-    Bacefook,
-    DadGpt,
-    myOs,
-    Scroller,
-    HomeIcon,
-    ArrowLeft,
-    MyInput,
-  },
-  data(): {
-    history: NetworkItem[];
-  } {
-    // Each browser window keeps its own history
-    return {
-      history: [boogle],
-    };
-  },
-  methods: {
-    home() {
-      this.history = [boogle];
-    },
-    navigate(url: string) {
-      const page = this.getNetwork.find((n: NetworkItem) => n.url.toLocaleLowerCase() === url.toLocaleLowerCase());
-      this.history.push(page || empty);
-    },
-    urlBarEnter(event: any) {
-      this.navigate(event.target.value);
-    },
-    backwards() {
-      this.history.pop();
-    },
-  },
-  computed: {
-    ...mapGetters({  
-      getNetwork: 'getNetwork',
-    }),
-    currentPage(): NetworkItem {
-      return this.history[this.history.length - 1];
-    },
-    currentUrl(): string {
-      return this.history[this.history.length - 1]?.url || '';
-    },
-  },
-});
+// Each browser window keeps its own history
+const history = ref<WebPage[]>([boogle]);
+
+const currentPage = computed<WebPage | undefined>(() => history.value[history.value.length - 1]);
+const currentUrl = computed(() => currentPage.value?.url || '');
+
+function home() {
+  history.value = [boogle];
+}
+
+function navigate(url: string) {
+  history.value.push(findPage(url));
+}
+
+function urlBarEnter(event: KeyboardEvent) {
+  navigate((event.target as HTMLInputElement).value);
+}
+
+function backwards() {
+  history.value.pop();
+}
 </script>
 
 <style lang="scss" scoped>

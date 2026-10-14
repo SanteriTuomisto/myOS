@@ -11,24 +11,23 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
+import { useSystemStore } from '@/stores/system';
 
-export default defineComponent({
-  emits: ['menuItemClicked'],
-  props: {
-    text: {
-      type: String,
-      default: '',
-    },
-  },
-  methods: {
-    menuItemClicked() {
-      this.$store.dispatch('toggleStartMenu');
-      this.$emit('menuItemClicked');
-    },
-  },
-});
+defineProps<{
+  text: string;
+}>();
+
+const emit = defineEmits<{
+  click: [];
+}>();
+
+const system = useSystemStore();
+
+function menuItemClicked() {
+  system.toggleStartMenu();
+  emit('click');
+}
 </script>
 
 <style scoped lang="scss">

@@ -42,12 +42,11 @@
       <Scroller>
         <div class="items">
           <FileSystemItem
-            v-for="(item, index) in getCurrentFolder"
-            :key="`file-explorer-${index}`"
+            v-for="item in getCurrentFolder"
+            :key="item.id"
             :id="item.id"
             :type="item.type"
             :name="item.name"
-            :content="item.content"
             :selected="itemSelected(item.id)"
             @selected="selected"
             @deselected="deselected"
@@ -59,8 +58,8 @@
   </div>
 </template>
 
-<script>
-import { mapGetters } from 'vuex';
+<script setup lang="ts">
+import { computed, ref } from 'vue';
 import FileSystemItem from './FileSystemItem.vue';
 import HomeIcon from '@/assets/HomeIcon.vue';
 import ArrowLeft from '@/assets/ArrowLeft.vue';
@@ -69,133 +68,75 @@ import FolderIcon from '@/assets/FolderIcon.vue';
 import TrashIcon from '@/assets/TrashIcon.vue';
 import EditIcon from '@/assets/EditIcon.vue';
 import Scroller from '@/components/_shared/Scroller.vue';
+import { ROOT_PATH, useFileSystemStore } from '@/stores/fileSystem';
+import type { ItemType, PathItem } from '@/types';
 
-export default {
-  components: {
-    FileSystemItem,
-    HomeIcon,
-    ArrowLeft,
-    FileIcon,
-    FolderIcon,
-    TrashIcon,
-    EditIcon,
-    Scroller,
-  },
-  props: {
-    fileSystemId: Number,
-  },
-  data() {
-    return {
-      selectedItems: [],
-      paths: [{
-        name: 'home',
-        id: -1,
-      }],
-    };
-  },
-  created() {
-    const folderPath = this.findFolderPath(this.getFileSystemItems, this.fileSystemId);
-    if (folderPath) {
-      this.paths.push(...folderPath);
-    }
-  },
-  methods: {
-    findFolderPath(items, id) {
-      for (const item of items) {
-        if (item.type !== 'folder') {
-          continue;
-        }
-        const pathItem = { name: item.name, id: item.id, content: item.content };
-        if (item.id === id) {
-          return [pathItem];
-        }
-        const subPath = this.findFolderPath(item.content || [], id);
-        if (subPath) {
-          return [pathItem, ...subPath];
-        }
-      }
-      return null;
-    },
-    folderClick({ id, name, content }) {
-      this.selectedItems = [];
-      this.paths.push({ name, id, content });
-    },
-    selected(id) {
-      this.selectedItems.push(id);
-    },
-    deselected(id) {
-      const index = this.selectedItems.indexOf(id);
-      if (index === -1) {
-        return;
-      }
-      this.selectedItems.splice(index, 1);
-    },
-    itemSelected(id) {
-      return this.selectedItems.includes(id);
-    },
-    goHome() {
-      this.paths = [{ name: 'home', id: -1 }];
-    },
-    back() {
-      this.paths.pop();
-    },
-    checkName(name, integer = 1) {
-      const combinedName = `${name} ${integer}`;
-      const nameExists = this.getCurrentFolder.find(i => i.name.toLowerCase() === combinedName.toLowerCase());
-      if (nameExists) {
-        return this.checkName(name, integer += 1);
-      } else {
-        return combinedName;
-      }
-    },
-    addNewFolder() {
-      this.$store.dispatch('addNewFile', {
-        currentPath: this.paths,
-        item: {
-          name: this.checkName('Folder'),
-          type: 'folder',
-        },
-      });
-    },
-    addNewTextFile() {
-      this.$store.dispatch('addNewFile', {
-        currentPath: this.paths,
-        item: {
-          name: this.checkName('Text'),
-          type: 'file',
-        },
-      });
-    },
-    deleteSelectedItems() {
-      if (this.selectedItems.length === 0) {
-        return;
-      }
-      this.selectedItems.forEach((id) => {
-        this.$store.dispatch('deleteFile', {
-          currentPath: this.paths,
-          id,
-        });
-      });
-      this.selectedItems = [];
-    },
-  },
-  computed: {
-    ...mapGetters({  
-      getFileSystemItems: 'getFileSystemItems',
-    }),
-    getCurrentFolder() {
-      const items = this.getFileSystemItems;
-      if (this.isHome) {
-        return items;
-      }
-      const lastItem = this.paths[this.paths.length - 1];
-      return lastItem.content;
-    },
-    isHome() {
-      return this.paths.length === 1;
-    },
-  },
-};
+const props = defineProps<{
+  fileSystemId?: number;
+}>();
+
+const fileSystem = useFileSystemStore();
+
+const selectedItems = ref<number[]>([]);
+const paths = ref<PathItem[]>(
+  (props.fileSystemId != null && fileSystem.findFolderPath(props.fileSystemId)) || [...ROOT_PATH],
+);
+
+const getCurrentFolder = computed(() => fileSystem.getFolderContent(paths.value) ?? []);
+const isHome = computed(() => paths.value.length === 1);
+
+function folderClick({ id, name }: { id: number; name: string }) {
+  selectedItems.value = [];
+  paths.value.push({ id, name });
+}
+
+function selected(id: number) {
+  selectedItems.value.push(id);
+}
+
+function deselected(id: number) {
+  const index = selectedItems.value.indexOf(id);
+  if (index === -1) {
+    return;
+  }
+  selectedItems.value.splice(index, 1);
+}
+
+function itemSelected(id: number) {
+  return selectedItems.value.includes(id);
+}
+
+function goHome() {
+  selectedItems.value = [];
+  paths.value = [...ROOT_PATH];
+}
+
+function back() {
+  selectedItems.value = [];
+  paths.value.pop();
+}
+
+function addNew(type: ItemType, baseName: string) {
+  fileSystem.addItem(paths.value, type, fileSystem.uniqueName(paths.value, baseName));
+}
+
+function addNewFolder() {
+  addNew('folder', 'Folder');
+}
+
+function addNewTextFile() {
+  addNew('file', 'Text');
+}
+
+function deleteSelectedItems() {
+  if (selectedItems.value.length === 0) {
+    return;
+  }
+  selectedItems.value.forEach((id) => {
+    fileSystem.deleteItem(paths.value, id);
+  });
+  selectedItems.value = [];
+}
 </script>
 
 <style lang="scss" scoped>

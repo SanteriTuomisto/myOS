@@ -23,21 +23,24 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue';
 import Eyeball from '@/components/projects/eyeball/Eyeball.vue';
 import Bubbles from '@/components/projects/bubbles/Bubbles.vue';
+import { useSystemStore } from '@/stores/system';
 
-export default {
-  components: {
-    Eyeball,
-    Bubbles,
-  },
-  mounted() {
-    setTimeout(() => {
-      this.$store.dispatch('toggleStartup');
-    }, 5000);
-  },
-};
+const system = useSystemStore();
+let timeout: ReturnType<typeof setTimeout> | undefined;
+
+onMounted(() => {
+  timeout = setTimeout(() => {
+    system.toggleStartup();
+  }, 5000);
+});
+
+onUnmounted(() => {
+  clearTimeout(timeout);
+});
 </script>
 
 <style lang="scss" scoped>

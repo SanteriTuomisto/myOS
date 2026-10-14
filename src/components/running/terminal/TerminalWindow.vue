@@ -1,6 +1,6 @@
 <template>
   <div class="terminal" @click="focusInput" aria-label="Terminal">
-    <div>myOs {{ $store.state.version }}</div>
+    <div>myOs {{ version }}</div>
     <div v-for="(line, index) in lines" :key="index">
       <div v-if="line.command != null">
         <span class="prompt">{{ line.prompt }}</span>
@@ -11,7 +11,7 @@
     <div class="input-row">
       <span class="prompt">{{ prompt }}</span>
       <input
-        ref="input"
+        ref="terminalInput"
         v-model="input"
         class="input"
         spellcheck="false"
@@ -22,110 +22,58 @@
   </div>
 </template>
 
-<script>
-import { mapGetters } from 'vuex';
+<script setup lang="ts">
+import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue';
+import { ROOT_PATH, useFileSystemStore } from '@/stores/fileSystem';
+import { useApplicationsStore } from '@/stores/applications';
+import { useSystemStore } from '@/stores/system';
+import type { PathItem } from '@/types';
+import { runCommand } from './commands';
 
-export default {
-  data() {
-    return {
-      input: '',
-      lines: [],
-      paths: [{
-        name: 'home',
-        id: -1,
-      }],
-    };
-  },
-  mounted() {
-    this.focusInput();
-  },
-  methods: {
-    focusInput() {
-      this.$refs.input?.focus();
-    },
-    submit() {
-      const text = this.input.trim();
-      const prompt = this.prompt;
-      this.input = '';
-      const response = text === '' ? '' : this.commandHandler(text);
-      this.lines.push({ prompt, command: text, response });
-      this.$nextTick(() => {
-        this.$refs.input?.scrollIntoView({ block: 'nearest' });
-      });
-    },
-    commandHandler(text) {
-      let response = '';
-      const argsIndex = text.indexOf(" ");
-      const command = argsIndex !== -1 ? text.substring(0, argsIndex) : text;
+interface Line {
+  prompt: string;
+  command: string;
+  response: string;
+}
 
-      switch (command) {
-        case "help":
-          response = "commands: ls, cd {0}, open {0}";
-          break;
-        case "ls":
-          for (let i = 0; i < this.getCurrentFolder.length; i += 1) {
-            response += `${this.getCurrentFolder[i].name} (${this.getCurrentFolder[i].type}), `;
-          }
-          break;
-        case "cd":
-           
-          const param = text.substring(argsIndex + 1).toLowerCase();
-          if (param === '..') {
-            if (!this.isHome) {
-              this.paths.pop();
-            }
-            break;
-          }
-           
-          const folder = this.getCurrentFolder.find(f => f.type === 'folder' && f.name.toLowerCase() === param);
-          if (folder) {
-            this.paths.push({ name: folder.name, id: folder.id, content: folder.content });
-          } else {
-            response = "No such folder";
-          }
-          // TODO vastaa ls?
-          break;
-        case "open":
-           
-          const item = this.getCurrentFolder.find(f => f.name.toLowerCase() === text.substring(argsIndex + 1).toLowerCase());
-          if (item) {
-            this.$store.dispatch('openApplication', {
-              name: item.name,
-              type: item.type,
-              fileSystemId: item.id,
-            });
-          } else {
-            response = "No such file or program"
-          }
-          break;
-        default:
-          response = "Unknown command: " + command + ", try help";
-      }
+const fileSystem = useFileSystemStore();
+const applications = useApplicationsStore();
+const { version } = useSystemStore();
 
-      return response;
-    },
-  },
-  computed: {
-    ...mapGetters({  
-      getFileSystemItems: 'getFileSystemItems',
-    }),
-    getCurrentFolder() {
-      const items = this.getFileSystemItems;
-      if (this.isHome) {
-        return items;
-      }
-      const lastItem = this.paths[this.paths.length - 1];
-      return lastItem.content;
-    },
-    isHome() {
-      return this.paths.length === 1;
-    },
-    prompt() {
-      const paths = this.paths.map(p => p.name);
-      return `$ ${paths.join('/')}:~ `;
-    },
-  },
-};
+const inputEl = useTemplateRef<HTMLInputElement>('terminalInput');
+const input = ref('');
+const lines = ref<Line[]>([]);
+const paths = ref<PathItem[]>([...ROOT_PATH]);
+
+const prompt = computed(() => `$ ${paths.value.map((p) => p.name).join('/')}:~ `);
+
+onMounted(() => {
+  focusInput();
+});
+
+function focusInput() {
+  inputEl.value?.focus();
+}
+
+function submit() {
+  const text = input.value.trim();
+  const currentPrompt = prompt.value;
+  input.value = '';
+  let response = '';
+  if (text !== '') {
+    const result = runCommand(text, {
+      path: paths.value,
+      folder: fileSystem.getFolderContent(paths.value) ?? [],
+      openApplication: applications.openApplication,
+    });
+    response = result.response;
+    paths.value = result.path;
+  }
+  lines.value.push({ prompt: currentPrompt, command: text, response });
+  nextTick(() => {
+    inputEl.value?.scrollIntoView?.({ block: 'nearest' });
+  });
+}
 </script>
 
 <style scoped>

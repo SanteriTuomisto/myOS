@@ -13,26 +13,14 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
-import { mapGetters } from 'vuex';
+<script setup lang="ts">
+import { storeToRefs } from 'pinia';
 import MyButton from '../../_shared/MyButton.vue';
+import { useSettingsStore } from '@/stores/settings';
 
-export default defineComponent({
-  components: {
-    MyButton,
-  },
-  methods: {
-    setBackground(value: string) {
-      this.$store.dispatch('updateBackground', value);
-    },
-  },
-  computed: {
-    ...mapGetters({  
-      getBackground: 'getBackground',
-    }),
-  },
-});
+const settings = useSettingsStore();
+const { background: getBackground } = storeToRefs(settings);
+const { setBackground } = settings;
 </script>
 
 <style scoped lang="scss">

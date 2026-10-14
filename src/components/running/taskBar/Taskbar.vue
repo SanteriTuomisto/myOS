@@ -1,13 +1,13 @@
 <template>
-  <StartMenu :showStartMenu="getShowStartMenu" />
+  <StartMenu :showStartMenu="showStartMenu" />
   <div class="start-menu-backdrop"
-    v-if="getShowStartMenu"
-    @click="hideStartMenu"  
+    v-if="showStartMenu"
+    @click="system.toggleStartMenu()"
   >
   </div>
   <div id="taskbar">
     <div class="start-menu-btn"
-      @click="startButtonClick" 
+      @click="system.toggleStartMenu()"
     >
       Start
     </div>
@@ -15,7 +15,6 @@
     >
       <TaskbarItem
         v-for="app in applications" :key="app.id"
-        :id="app.id"
         :app="app"
       />
     </div>
@@ -28,62 +27,35 @@
   </div>
 </template>
 
-<script>
-import { mapGetters } from 'vuex';
+<script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue';
+import { storeToRefs } from 'pinia';
 import WifiIcon from '@/assets/WifiIcon.vue';
 import StartMenu from './StartMenu.vue';
 import TaskbarItem from './TaskbarItem.vue';
+import { useSystemStore } from '@/stores/system';
+import { useApplicationsStore } from '@/stores/applications';
 
-export default {
-  components: {
-    StartMenu,
-    TaskbarItem,
-    WifiIcon,
-  },
-  data() {
-    return {
-      date: null,
-      time: null,
-      getDateInterval: null,
-      applications: [],
-    };
-  },
-  mounted() {
-    this.applications = this.getApplications;
-    this.getDate();
-    this.getDateInterval = setInterval(() => {
-      this.getDate();
-    }, 1000);
-  },
-  unmounted() {
-    clearInterval(this.getDateInterval);
-  },
-  methods: {
-    getDate() {
-      const now = new Date();
-      this.time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-    },
-    startButtonClick() {
-      this.$store.dispatch('toggleStartMenu');
-    },
-    hideStartMenu() {
-      this.$store.dispatch('toggleStartMenu');
-    },
-  },
-  computed: {
-    ...mapGetters({  
-      getApplications: 'getApplications',
-    }),
-    getShowStartMenu() {
-      return this.$store.state.showStartMenu;
-    },
-  },
-  watch: {
-    getApplications(apps) {
-      this.applications = apps;
-    },
-  },
-};
+const system = useSystemStore();
+const { showStartMenu } = storeToRefs(system);
+const { applications } = storeToRefs(useApplicationsStore());
+
+const time = ref<string | null>(null);
+let getDateInterval: ReturnType<typeof setInterval> | undefined;
+
+function getDate() {
+  const now = new Date();
+  time.value = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+}
+
+onMounted(() => {
+  getDate();
+  getDateInterval = setInterval(getDate, 1000);
+});
+
+onUnmounted(() => {
+  clearInterval(getDateInterval);
+});
 </script>
 
 <style scoped lang="scss">

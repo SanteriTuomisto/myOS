@@ -1,0 +1,78 @@
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import type { Application, AppType, OpenApplicationInput, Size } from '@/types';
+
+const DEFAULT_WINDOW_SIZE: Size = { width: 500, height: 350 };
+
+export const useApplicationsStore = defineStore('applications', () => {
+  const nextId = ref(0);
+  const applications = ref<Application[]>([]);
+  const activeWindowId = ref<number | null>(null);
+  // Last size per app type, so a reopened app keeps its size
+  const windowSizes = ref<Partial<Record<AppType, Size>>>({});
+
+  function openApplication(input: OpenApplicationInput): Application {
+    const app: Application = {
+      ...input,
+      id: nextId.value,
+      minimized: false,
+      maximized: false,
+    };
+    nextId.value += 1;
+    applications.value.push(app);
+    activeWindowId.value = app.id;
+    return app;
+  }
+
+  function updateApplication(id: number, changes: Partial<Omit<Application, 'id'>>) {
+    const app = getApplicationById(id);
+    if (!app) {
+      return;
+    }
+    Object.assign(app, changes);
+    if (changes.size) {
+      windowSizes.value[app.type] = { ...changes.size };
+    }
+  }
+
+  function closeApplication(id: number) {
+    applications.value = applications.value.filter((app) => app.id !== id);
+    selectOtherActiveWindow();
+  }
+
+  function setActiveWindow(id: number | null) {
+    activeWindowId.value = id;
+    if (id != null) {
+      updateApplication(id, { minimized: false });
+    }
+  }
+
+  function selectOtherActiveWindow() {
+    const visibleApp = [...applications.value].reverse().find((app) => !app.minimized);
+    activeWindowId.value = visibleApp ? visibleApp.id : null;
+  }
+
+  function getApplicationById(id: number): Application | undefined {
+    return applications.value.find((app) => app.id === id);
+  }
+
+  function getWindowSize(type: AppType): Size {
+    return windowSizes.value[type] ?? DEFAULT_WINDOW_SIZE;
+  }
+
+  return {
+    nextId,
+    applications,
+    activeWindowId,
+    windowSizes,
+    openApplication,
+    updateApplication,
+    closeApplication,
+    setActiveWindow,
+    selectOtherActiveWindow,
+    getApplicationById,
+    getWindowSize,
+  };
+}, {
+  persist: true,
+});
