@@ -30,8 +30,8 @@ Everything we want to do with myOS: ideas, todos and known bugs. Check items off
 ## New apps
 
 ### From my other repos (iframe apps)
-- [ ] Analog synth simulator (synth repo): registry entry and desktop icon are in, the URL is a placeholder until it's deployed
-- [ ] 3D excavator (3d-machine-viewer repo), also the three.js / Blender demo: same, placeholder URL
+- [ ] Analog synth simulator (synth repo): in myOS at https://santerituomisto.github.io/synth/, live once the deploy workflow (SanteriTuomisto/synth#1) is merged
+- [ ] 3D excavator (3d-machine-viewer repo), also the three.js / Blender demo: in myOS at https://santerituomisto.github.io/3d-machine-viewer/, live once SanteriTuomisto/3d-machine-viewer#1 is merged
 
 ### Built into myOS
 - [ ] **Task manager / Ctrl+Alt+Del**: fake CPU, GPU, network and memory graphs, a list of running apps, and closing them from there

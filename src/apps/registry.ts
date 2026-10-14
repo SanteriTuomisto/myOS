@@ -124,7 +124,6 @@ export const apps = {
     defaultSize: DEFAULT_SIZE,
     minSize: MIN_SIZE,
   },
-  // TODO: placeholder URLs, replace with the real deployments
   synth: {
     kind: 'external',
     name: 'Synth',
@@ -137,7 +136,7 @@ export const apps = {
     kind: 'external',
     name: 'Excavator',
     icon: ExcavatorIcon,
-    url: 'https://santerituomisto.github.io/3D-machine-viewer/',
+    url: 'https://santerituomisto.github.io/3d-machine-viewer/',
     defaultSize: { width: 800, height: 600 },
     minSize: MIN_SIZE,
   },
