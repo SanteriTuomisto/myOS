@@ -37,17 +37,18 @@ describe('Taskbar', () => {
     expect(wrapper.findAll('.taskbarItems .menu-item').map((item) => item.text())).toEqual(['Terminal']);
   });
 
-  it('clicking an item toggles that app active', async () => {
+  it('clicking an item brings it to the front, clicking again minimizes it', async () => {
     const applications = useApplicationsStore();
     const browser = applications.openApplication({ name: 'Browser', type: 'browser' });
-    applications.openApplication({ name: 'Terminal', type: 'terminal' });
+    const terminal = applications.openApplication({ name: 'Terminal', type: 'terminal' });
     const wrapper = mountTaskbar();
 
     await wrapper.findAll('.taskbarItems .menu-item')[0].trigger('click');
     expect(applications.activeWindowId).toBe(browser.id);
 
     await wrapper.findAll('.taskbarItems .menu-item')[0].trigger('click');
-    expect(applications.activeWindowId).toBeNull();
+    expect(applications.getApplicationById(browser.id)?.minimized).toBe(true);
+    expect(applications.activeWindowId).toBe(terminal.id);
   });
 
   it('opens the start menu with the Start button and closes it from the backdrop', async () => {

@@ -88,7 +88,9 @@ function openWindow(item: FileSystemItem) {
     left: 0;
     right: 0;
     bottom: 46px;
-    overflow: hidden;
+    // clip, not hidden: a hidden container can still be scrolled, e.g. when an input in a
+    // window that sticks out past the edge gets focus, which shifts every window sideways
+    overflow: clip;
   }
 
   .desktop-background {

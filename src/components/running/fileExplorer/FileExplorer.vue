@@ -22,13 +22,13 @@
         </div>
         <div title="Rename" style="height: 30px;">
           <EditIcon class="icon" :class="{
-            'disabled': selectedItems.length !== 1,
-          }" />
+            'disabled': !canRename,
+          }" @click="renameSelected" />
         </div>
         <div title="Delete" style="height: 30px;">
           <TrashIcon class="icon"
             :class="{
-              'disabled': selectedItems.length === 0,
+              'disabled': !canDelete,
             }"
             @click="deleteSelectedItems"
           />
@@ -37,6 +37,7 @@
     </div>
     <div class="path">
       <span v-for="(p, index) in paths" :key="`path-item-${index}`">{{ p.name }}/</span>
+      <span v-if="renameError" class="error">{{ renameError }}</span>
     </div>
     <div style="height: calc(100% - 60px);">
       <Scroller>
@@ -48,9 +49,13 @@
             :type="item.type"
             :name="item.name"
             :selected="itemSelected(item.id)"
+            :editing="renamingId === item.id"
+            :error="renamingId === item.id ? renameError : ''"
             @selected="selected"
             @deselected="deselected"
             @folderClick="folderClick"
+            @rename="(name, via) => rename(item.id, name, via)"
+            @cancelRename="stopRenaming"
           />
         </div>
       </Scroller>
@@ -78,14 +83,50 @@ const props = defineProps<{
 const fileSystem = useFileSystemStore();
 
 const selectedItems = ref<number[]>([]);
+const renamingId = ref<number | null>(null);
+const renameError = ref('');
 const paths = ref<PathItem[]>(
   (props.fileSystemId != null && fileSystem.findFolderPath(props.fileSystemId)) || [...ROOT_PATH],
 );
 
 const getCurrentFolder = computed(() => fileSystem.getFolderContent(paths.value) ?? []);
 const isHome = computed(() => paths.value.length === 1);
+const selectedEntries = computed(() => getCurrentFolder.value.filter((item) => selectedItems.value.includes(item.id)));
+// System items (Desktop, Start Menu, ...) can't be renamed or deleted
+const canRename = computed(() => selectedEntries.value.length === 1 && !selectedEntries.value[0].protected);
+const canDelete = computed(() => selectedEntries.value.length > 0 && selectedEntries.value.every((item) => !item.protected));
+
+function startRenaming(id: number) {
+  renamingId.value = id;
+  renameError.value = '';
+}
+
+function stopRenaming() {
+  renamingId.value = null;
+  renameError.value = '';
+}
+
+function renameSelected() {
+  if (canRename.value) {
+    startRenaming(selectedEntries.value[0].id);
+  }
+}
+
+// An invalid name keeps the input open after Enter; leaving the input gives up and keeps the old name
+function rename(id: number, name: string, via: 'enter' | 'blur') {
+  if (renamingId.value !== id) {
+    return;
+  }
+  const error = fileSystem.renameItem(paths.value, id, name);
+  if (!error || via === 'blur') {
+    stopRenaming();
+  } else {
+    renameError.value = error;
+  }
+}
 
 function folderClick({ id, name }: { id: number; name: string }) {
+  stopRenaming();
   selectedItems.value = [];
   paths.value.push({ id, name });
 }
@@ -107,17 +148,24 @@ function itemSelected(id: number) {
 }
 
 function goHome() {
+  stopRenaming();
   selectedItems.value = [];
   paths.value = [...ROOT_PATH];
 }
 
 function back() {
+  stopRenaming();
   selectedItems.value = [];
   paths.value.pop();
 }
 
+// New items start with a free "Folder N"/"Text N" name, ready to be renamed
 function addNew(type: ItemType, baseName: string) {
-  fileSystem.addItem(paths.value, type, fileSystem.uniqueName(paths.value, baseName));
+  const item = fileSystem.addItem(paths.value, type, fileSystem.uniqueName(paths.value, baseName));
+  if (item) {
+    selectedItems.value = [item.id];
+    startRenaming(item.id);
+  }
 }
 
 function addNewFolder() {
@@ -129,7 +177,7 @@ function addNewTextFile() {
 }
 
 function deleteSelectedItems() {
-  if (selectedItems.value.length === 0) {
+  if (!canDelete.value) {
     return;
   }
   selectedItems.value.forEach((id) => {
@@ -179,6 +227,12 @@ function deleteSelectedItems() {
   overflow: hidden;
   border-bottom: 4px solid #5c5cd5;
   user-select: none;
+}
+
+.error {
+  margin-left: 10px;
+  color: #8b0000;
+  font-weight: bold;
 }
 
 .line {

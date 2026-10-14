@@ -4,6 +4,11 @@ import type { Application, AppType, OpenApplicationInput, Size } from '@/types';
 
 const DEFAULT_WINDOW_SIZE: Size = { width: 500, height: 350 };
 
+/** Phones get maximized windows, since a desktop-size window doesn't fit. */
+export function isSmallScreen(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia?.('(max-width: 767px)').matches === true;
+}
+
 export const useApplicationsStore = defineStore('applications', () => {
   const nextId = ref(0);
   const applications = ref<Application[]>([]);
@@ -16,7 +21,7 @@ export const useApplicationsStore = defineStore('applications', () => {
       ...input,
       id: nextId.value,
       minimized: false,
-      maximized: false,
+      maximized: isSmallScreen(),
     };
     nextId.value += 1;
     applications.value.push(app);
@@ -47,6 +52,21 @@ export const useApplicationsStore = defineStore('applications', () => {
     }
   }
 
+  function minimizeWindow(id: number) {
+    updateApplication(id, { minimized: true });
+    selectOtherActiveWindow();
+  }
+
+  /** Taskbar click: hides the active window, or brings any other window to the front. */
+  function toggleWindow(id: number) {
+    const app = getApplicationById(id);
+    if (app && activeWindowId.value === id && !app.minimized) {
+      minimizeWindow(id);
+    } else {
+      setActiveWindow(id);
+    }
+  }
+
   function selectOtherActiveWindow() {
     const visibleApp = [...applications.value].reverse().find((app) => !app.minimized);
     activeWindowId.value = visibleApp ? visibleApp.id : null;
@@ -70,6 +90,8 @@ export const useApplicationsStore = defineStore('applications', () => {
     updateApplication,
     closeApplication,
     setActiveWindow,
+    minimizeWindow,
+    toggleWindow,
     selectOtherActiveWindow,
     getApplicationById,
     getWindowSize,

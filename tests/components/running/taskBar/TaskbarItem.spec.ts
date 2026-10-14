@@ -25,16 +25,18 @@ describe('TaskbarItem', () => {
     expect(wrapper.classes()).toContain('inactive');
   });
 
-  it('clicking toggles the window active', async () => {
+  it('clicking the active window minimizes it, clicking again restores it', async () => {
     const applications = useApplicationsStore();
     const app = applications.openApplication({ name: 'Browser', type: 'browser' });
     const wrapper = mount(TaskbarItem, { props: { app }, global: { plugins: [pinia] } });
 
     await wrapper.trigger('click');
+    expect(applications.getApplicationById(app.id)?.minimized).toBe(true);
     expect(applications.activeWindowId).toBeNull();
     expect(wrapper.classes()).toContain('inactive');
 
     await wrapper.trigger('click');
+    expect(applications.getApplicationById(app.id)?.minimized).toBe(false);
     expect(applications.activeWindowId).toBe(app.id);
     expect(wrapper.classes()).toContain('active');
   });

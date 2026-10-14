@@ -16,11 +16,17 @@ describe('FileExplorer', () => {
   const mountExplorer = (props: { fileSystemId?: number } = {}) =>
     mount(FileExplorer, { props, global: { plugins: [pinia] } });
 
+  // An item being renamed shows its name in an input instead of as text
+  const itemName = (el: ReturnType<ReturnType<typeof mountExplorer>['find']>) => {
+    const input = el.find('input');
+    return input.exists() ? (input.element as HTMLInputElement).value : el.find('.text').text();
+  };
+
   const names = (wrapper: ReturnType<typeof mountExplorer>) =>
-    wrapper.findAll('.item .text').map((el) => el.text());
+    wrapper.findAll('.item').map(itemName);
 
   const item = (wrapper: ReturnType<typeof mountExplorer>, name: string) => {
-    const found = wrapper.findAll('.item').find((el) => el.find('.text').text() === name);
+    const found = wrapper.findAll('.item').find((el) => itemName(el) === name);
     if (!found) {
       throw new Error(`No item ${name}`);
     }
@@ -99,6 +105,7 @@ describe('FileExplorer', () => {
     const wrapper = mountExplorer();
 
     await button(wrapper, 'New folder').trigger('click');
+    await wrapper.find('.item input').trigger('keydown.enter');
     await item(wrapper, 'Folder 1').trigger('dblclick');
     expect(names(wrapper)).toEqual([]);
 
@@ -135,6 +142,89 @@ describe('FileExplorer', () => {
     expect(rename().classes()).not.toContain('disabled');
     await item(wrapper, 'Text').trigger('click');
     expect(rename().classes()).toContain('disabled');
+  });
+
+  it('starts a new item in rename mode, selected, and saves the typed name on Enter', async () => {
+    const wrapper = mountExplorer({ fileSystemId: 3 });
+    const fs = useFileSystemStore();
+
+    await button(wrapper, 'New folder').trigger('click');
+    const input = wrapper.find('.item input');
+    expect((input.element as HTMLInputElement).value).toBe('Folder 1');
+    expect(wrapper.findAll('.item-selected')).toHaveLength(1);
+
+    await input.setValue('Photos');
+    await input.trigger('keydown.enter');
+
+    expect(wrapper.find('.item input').exists()).toBe(false);
+    expect(names(wrapper)).toEqual(['Text', 'Photos']);
+    expect(fs.getFolderContent(fs.findFolderPath(3)!)?.map((i) => i.name)).toEqual(['Text', 'Photos']);
+  });
+
+  it('renames the selected item with the Rename button', async () => {
+    const wrapper = mountExplorer({ fileSystemId: 0 });
+
+    await item(wrapper, 'Text').trigger('click');
+    await button(wrapper, 'Rename').trigger('click');
+    const input = wrapper.find('.item input');
+    await input.setValue('Notes');
+    await input.trigger('keydown.enter');
+
+    expect(names(wrapper)).toEqual(['Documents', 'Notes']);
+  });
+
+  it('keeps the input open with an error for a taken name, and Escape cancels', async () => {
+    const wrapper = mountExplorer({ fileSystemId: 0 });
+
+    await item(wrapper, 'Text').trigger('click');
+    await button(wrapper, 'Rename').trigger('click');
+    const input = wrapper.find('.item input');
+    await input.setValue('documents');
+    await input.trigger('keydown.enter');
+
+    expect(wrapper.find('.item input').exists()).toBe(true);
+    expect(wrapper.find('.path .error').text()).toBe('documents already exists here');
+
+    await wrapper.find('.item input').trigger('keydown.esc');
+
+    expect(wrapper.find('.item input').exists()).toBe(false);
+    expect(wrapper.find('.path .error').exists()).toBe(false);
+    expect(names(wrapper)).toEqual(['Documents', 'Text']);
+  });
+
+  it('leaving the input with an invalid name keeps the old name', async () => {
+    const wrapper = mountExplorer({ fileSystemId: 0 });
+
+    await item(wrapper, 'Text').trigger('click');
+    await button(wrapper, 'Rename').trigger('click');
+    const input = wrapper.find('.item input');
+    await input.setValue('   ');
+    await input.trigger('blur');
+
+    expect(wrapper.find('.item input').exists()).toBe(false);
+    expect(names(wrapper)).toEqual(['Documents', 'Text']);
+  });
+
+  it('disables Rename and Delete for system items', async () => {
+    const wrapper = mountExplorer();
+
+    await item(wrapper, 'Desktop').trigger('click');
+
+    expect(button(wrapper, 'Rename').classes()).toContain('disabled');
+    expect(button(wrapper, 'Delete').classes()).toContain('disabled');
+
+    await button(wrapper, 'Delete').trigger('click');
+    expect(names(wrapper)).toContain('Desktop');
+  });
+
+  it('deleted items go to the recycle bin', async () => {
+    const wrapper = mountExplorer({ fileSystemId: 0 });
+    const fs = useFileSystemStore();
+
+    await item(wrapper, 'Text').trigger('click');
+    await button(wrapper, 'Delete').trigger('click');
+
+    expect(fs.recycleBin.map((entry) => entry.item.name)).toEqual(['Text']);
   });
 
   it('shows an empty folder when the current folder is deleted elsewhere', async () => {

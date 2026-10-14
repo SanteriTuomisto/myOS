@@ -16,6 +16,7 @@ import MusicPlayer from '@/components/running/musicPlayer/MusicPlayer.vue';
 import TerminalWindow from '@/components/running/terminal/TerminalWindow.vue';
 import SettingsWindow from '@/components/running/settings/SettingsWindow.vue';
 import MonsterSlayer from '@/components/projects/monsterSlayer/MonsterSlayer.vue';
+import RecycleBin from '@/components/running/recycleBin/RecycleBin.vue';
 
 // Lazy so the editor library loads only when a file is opened
 const TextEditor = defineAsyncComponent(() => import('@/components/running/editor/TextEditor.vue'));
@@ -50,6 +51,23 @@ export type AppDefinition = BuiltInAppDefinition | ExternalAppDefinition;
 
 const DEFAULT_SIZE: Size = { width: 500, height: 350 };
 const MIN_SIZE: Size = { width: 400, height: 250 };
+
+/**
+ * Ids of every app myOS knows. Written out rather than derived from `apps`: components in
+ * the registry use item types, which are built from this, and deriving it would be circular.
+ * `apps` below must have exactly these keys.
+ */
+export type AppType =
+  | 'file'
+  | 'fileExplorer'
+  | 'browser'
+  | 'recycleBin'
+  | 'musicPlayer'
+  | 'terminal'
+  | 'settings'
+  | 'monsterSlayer'
+  | 'synth'
+  | 'excavator';
 
 /**
  * Every app myOS knows. The key is the app id that file-system items and open windows store,
@@ -89,6 +107,7 @@ export const apps = {
     kind: 'builtIn',
     name: 'Recycle Bin',
     icon: TrashIcon,
+    component: RecycleBin,
     defaultSize: DEFAULT_SIZE,
     minSize: MIN_SIZE,
   },
@@ -140,9 +159,7 @@ export const apps = {
     defaultSize: { width: 800, height: 600 },
     minSize: MIN_SIZE,
   },
-} satisfies Record<string, AppDefinition>;
-
-export type AppType = keyof typeof apps;
+} satisfies Record<AppType, AppDefinition>;
 
 export const appTypes = Object.keys(apps) as AppType[];
 

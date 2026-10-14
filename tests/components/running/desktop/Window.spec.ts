@@ -55,6 +55,16 @@ describe('Window', () => {
     expect(style.top).toBe('10px');
   });
 
+  it('minimizing activates the next visible window', async () => {
+    const other = applications.openApplication({ name: 'Terminal', type: 'terminal' });
+    const app = applications.openApplication({ name: 'Browser', type: 'browser' });
+    const wrapper = mountWindow(app);
+
+    await buttons(wrapper)[0].trigger('click');
+
+    expect(applications.activeWindowId).toBe(other.id);
+  });
+
   it('minimizes, which hides it and clears the active window', async () => {
     const app = applications.openApplication({ name: 'Browser', type: 'browser' });
     const wrapper = mountWindow(app);
@@ -111,6 +121,17 @@ describe('Window', () => {
     await wrapper.vm.$nextTick();
 
     expect((wrapper.element as HTMLElement).style.display).not.toBe('none');
+  });
+
+  it('mounting keeps the saved active window (e.g. after a reload)', () => {
+    const first = applications.openApplication({ name: 'Browser', type: 'browser' });
+    const second = applications.openApplication({ name: 'Terminal', type: 'terminal' });
+    applications.setActiveWindow(first.id);
+
+    mountWindow(first);
+    mountWindow(second);
+
+    expect(applications.activeWindowId).toBe(first.id);
   });
 
   it('stays minimized when mounted minimized', () => {

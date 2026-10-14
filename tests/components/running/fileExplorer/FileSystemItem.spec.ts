@@ -14,7 +14,7 @@ describe('FileSystemItem', () => {
     pinia = createTestPinia();
   });
 
-  const mountItem = (props: { id: number; type: ItemType; name?: string; selected?: boolean }) =>
+  const mountItem = (props: { id: number; type: ItemType; name?: string; selected?: boolean; editing?: boolean; error?: string }) =>
     mount(FileSystemItem, { props, global: { plugins: [pinia] } });
 
   it('shows the name, icon and selected state', () => {
@@ -54,5 +54,42 @@ describe('FileSystemItem', () => {
       expect.objectContaining({ name: 'Text', type: 'file', fileSystemId: 4 }),
     ]);
     expect(wrapper.emitted('folderClick')).toBeUndefined();
+  });
+
+  describe('while renaming', () => {
+    it('shows an input with the current name and emits the typed name', async () => {
+      const wrapper = mountItem({ id: 4, type: 'file', name: 'Text', editing: true });
+      const input = wrapper.find('input');
+      expect((input.element as HTMLInputElement).value).toBe('Text');
+
+      await input.setValue('Notes');
+      await input.trigger('keydown.enter');
+      await input.trigger('blur');
+
+      expect(wrapper.emitted('rename')).toEqual([['Notes', 'enter'], ['Notes', 'blur']]);
+    });
+
+    it('emits cancelRename on Escape and marks an invalid name', async () => {
+      const wrapper = mountItem({ id: 4, type: 'file', name: 'Text', editing: true, error: 'Taken' });
+
+      await wrapper.find('input').trigger('keydown.esc');
+
+      expect(wrapper.emitted('cancelRename')).toHaveLength(1);
+      expect(wrapper.find('input').classes()).toContain('invalid');
+      expect(wrapper.find('input').attributes('title')).toBe('Taken');
+    });
+
+    it('does not open, select or navigate from clicks in the input', async () => {
+      const applications = useApplicationsStore();
+      const wrapper = mountItem({ id: 3, type: 'folder', name: 'Documents', editing: true });
+
+      await wrapper.find('input').trigger('click');
+      await wrapper.find('input').trigger('dblclick');
+      await wrapper.trigger('dblclick');
+
+      expect(wrapper.emitted('selected')).toBeUndefined();
+      expect(wrapper.emitted('folderClick')).toBeUndefined();
+      expect(applications.applications).toEqual([]);
+    });
   });
 });

@@ -10,6 +10,17 @@ export interface FileSystemItem {
   type: ItemType;
   name: string;
   content?: FileSystemItem[];
+  /** System items (Desktop, Start Menu, ...) can't be deleted or renamed */
+  protected?: boolean;
+}
+
+/** An item in the recycle bin, with what's needed to restore it. */
+export interface RecycledItem {
+  item: FileSystemItem;
+  /** Folder it was deleted from */
+  originalPath: PathItem[];
+  /** Saved file contents of the item and everything inside it, by file id */
+  fileData: Record<number, string>;
 }
 
 /** A step in a folder path. The root ("home") has id -1. */
