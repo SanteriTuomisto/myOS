@@ -15,10 +15,7 @@ export default defineConfig({
   },
   test: {
     environment: 'happy-dom',
+    include: ['tests/**/*.spec.ts'],
     restoreMocks: true,
-    coverage: {
-      include: ['src/**/*.{ts,vue}'],
-      exclude: ['src/**/*.spec.ts', 'src/env.d.ts'],
-    },
   },
 });
