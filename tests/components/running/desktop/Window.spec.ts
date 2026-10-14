@@ -4,7 +4,7 @@ import type { Pinia } from 'pinia';
 import type { DefineComponent } from 'vue';
 import VueResizableModule from 'vue-resizable';
 import Window from '@/components/running/desktop/Window.vue';
-import { createTestPinia } from '../../../utils';
+import { createTestPinia, stubSmallScreen } from '../../../utils';
 import { useApplicationsStore } from '@/stores/applications';
 import type { Application } from '@/types';
 
@@ -179,6 +179,100 @@ describe('Window', () => {
         await wrapper.vm.$nextTick();
         expect(wrapper.find('.content').text(), eventName).toBe(expected);
       }
+    });
+  });
+
+  describe('on phones', () => {
+    const resizableOf = (wrapper: ReturnType<typeof mountWindow>) =>
+      wrapper.findComponent(VueResizable as DefineComponent);
+    // vue-resizable ships no types, so its props are read as a plain record
+    const resizableProps = (wrapper: ReturnType<typeof mountWindow>) =>
+      resizableOf(wrapper).props() as Record<string, unknown>;
+
+    it('shows the window full screen, without drag, resize or maximize', () => {
+      stubSmallScreen(true);
+      const app = applications.openApplication({ name: 'Browser', type: 'browser' });
+      const wrapper = mountWindow(app);
+      const props = resizableProps(wrapper);
+
+      expect(props.maximize).toBe(true);
+      expect(props.active).toEqual([]);
+      expect(props.dragSelector).toBe('.no-drag');
+      expect(buttons(wrapper)).toHaveLength(2);
+      expect(resizableOf(wrapper).classes()).toContain('mobile');
+    });
+
+    it('does not save the full-screen geometry or maximize the saved window', async () => {
+      stubSmallScreen(true);
+      const app = applications.openApplication({ name: 'Browser', type: 'browser' });
+      const wrapper = mountWindow(app);
+      const savedSize = { ...applications.getApplicationById(app.id)!.size! };
+
+      resizableOf(wrapper).vm.$emit('resize:end', { eventName: 'resize:end', left: 0, top: 0, width: 375, height: 766 });
+      await wrapper.find('.drag-container-1').trigger('dblclick');
+
+      const saved = applications.getApplicationById(app.id)!;
+      expect(saved.size).toEqual(savedSize);
+      expect(saved.maximized).toBe(false);
+    });
+
+    it('still activates the window when it is touched', () => {
+      stubSmallScreen(true);
+      const first = applications.openApplication({ name: 'Browser', type: 'browser' });
+      applications.openApplication({ name: 'Terminal', type: 'terminal' });
+      const wrapper = mountWindow(first);
+
+      resizableOf(wrapper).vm.$emit('drag:start', { eventName: 'drag:start', left: 0, top: 0, width: 375, height: 766 });
+
+      expect(applications.activeWindowId).toBe(first.id);
+    });
+
+    // What vue-resizable reports when leaving full screen: the geometry it saw before, here phone-sized
+    const leaveFullScreen = (wrapper: ReturnType<typeof mountWindow>) => {
+      const resizable = { $el: { parentElement: { clientWidth: 1024, clientHeight: 722 } }, w: 375, h: 766, l: 0, t: 0 };
+      resizableOf(wrapper).vm.$emit('maximize', { eventName: 'maximize', state: false, left: 0, top: 0, width: 375, height: 766, cmp: resizable });
+      return resizable;
+    };
+
+    it('leaving full screen puts back the real size, centered if opened on a phone', () => {
+      const setSmall = stubSmallScreen(true);
+      const app = applications.openApplication({ name: 'Browser', type: 'browser' });
+      const wrapper = mountWindow(app);
+
+      // Checked before the next render: the real vue-resizable can't lay out in tests and would redo this
+      setSmall(false);
+      const resizable = leaveFullScreen(wrapper);
+
+      expect(resizable).toMatchObject({ w: 500, h: 350, l: 262, t: 186 });
+      expect(applications.getApplicationById(app.id)).toMatchObject({
+        size: { width: 500, height: 350 },
+        position: { left: 262, top: 186 },
+      });
+    });
+
+    it('leaving full screen keeps a moved window inside the screen', () => {
+      // Starts wide: the real vue-resizable can't lay out in tests, so only the event below runs
+      stubSmallScreen(false);
+      const app = applications.openApplication({ name: 'Browser', type: 'browser' });
+      applications.updateApplication(app.id, { position: { left: 900, top: -40 }, size: { width: 500, height: 350 } });
+      const wrapper = mountWindow(applications.getApplicationById(app.id)!);
+
+      expect(leaveFullScreen(wrapper)).toMatchObject({ l: 524, t: 0 });
+    });
+
+    it('gets the normal window back when the screen gets wide', async () => {
+      const setSmall = stubSmallScreen(true);
+      const app = applications.openApplication({ name: 'Browser', type: 'browser' });
+      const wrapper = mountWindow(app);
+
+      setSmall(false);
+      await wrapper.vm.$nextTick();
+
+      const props = resizableProps(wrapper);
+      expect(props.maximize).toBe(false);
+      expect(props.active).toHaveLength(8);
+      expect(props.dragSelector).toBe('.drag-container-1');
+      expect(buttons(wrapper)).toHaveLength(3);
     });
   });
 });

@@ -33,6 +33,7 @@
 import { nextTick, ref, useTemplateRef, watch } from 'vue';
 import ItemIcon from '@/components/_shared/ItemIcon.vue';
 import { useApplicationsStore } from '@/stores/applications';
+import { useSmallScreen } from '@/composables/useSmallScreen';
 import type { ItemType } from '@/types';
 
 const props = withDefaults(defineProps<{
@@ -74,16 +75,26 @@ watch(() => props.editing, async (editing) => {
 }, { immediate: true });
 
 const applications = useApplicationsStore();
+// Phones have no reliable double-tap: the first tap selects, tapping a selected item opens it
+const mobile = useSmallScreen();
 
 function select() {
   if (!props.selected) {
     emit('selected', props.id);
+  } else if (mobile.value) {
+    open();
   } else {
     emit('deselected', props.id);
   }
 }
 
 function dblclick() {
+  if (!mobile.value) {
+    open();
+  }
+}
+
+function open() {
   if (props.editing) {
     return;
   }

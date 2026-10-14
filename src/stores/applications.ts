@@ -4,11 +4,6 @@ import type { Application, AppType, OpenApplicationInput, Size } from '@/types';
 
 const DEFAULT_WINDOW_SIZE: Size = { width: 500, height: 350 };
 
-/** Phones get maximized windows, since a desktop-size window doesn't fit. */
-export function isSmallScreen(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia?.('(max-width: 767px)').matches === true;
-}
-
 export const useApplicationsStore = defineStore('applications', () => {
   const nextId = ref(0);
   const applications = ref<Application[]>([]);
@@ -21,7 +16,7 @@ export const useApplicationsStore = defineStore('applications', () => {
       ...input,
       id: nextId.value,
       minimized: false,
-      maximized: isSmallScreen(),
+      maximized: false,
     };
     nextId.value += 1;
     applications.value.push(app);

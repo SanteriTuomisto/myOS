@@ -10,7 +10,7 @@ Everything we want to do with myOS: ideas, todos and known bugs. Check items off
 
 ## Known bugs
 
-- [x] Mobile: new windows open maximized on phones. Windows opened at desktop size before switching to a phone can still stick out.
+- [x] Mobile: windows hang off a phone screen (fixed by mobile mode, see Tech debt).
 - [x] Recycle Bin opens an empty window.
 - [ ] Music player: songs go in `src/assets/music/`, which doesn't exist yet; a failed `audio.play()` isn't handled.
 - [x] On reload, the last window to mount becomes active instead of the saved active window.
@@ -55,7 +55,7 @@ Everything we want to do with myOS: ideas, todos and known bugs. Check items off
 - [x] Convert all components to `<script setup lang="ts">`
 - [x] Tests for every store and component (Vitest + Vue Test Utils)
 - [ ] End-to-end tests for the main flows (Playwright)
-- [ ] Code that only works on desktop: windows, drag and resize need touch/mobile handling
+- [x] **Mobile mode** below 768px wide: every window full screen, no drag/resize/maximize, taskbar as the app switcher, single tap opens desktop icons (in Files: tap selects, tap again opens), bigger title-bar buttons. Display only, so a wide screen gets the saved windows back. Still to check on a real phone (only emulated so far).
 - [x] **Automatic deploy of main**: merging to main deploys myOS to https://santerituomisto.github.io/myOS/ (`.github/workflows/deploy.yml`); the `SanteriTuomisto.github.io` repo only redirects the root there and fixes the case of mistyped app paths.
 
 ## Done
