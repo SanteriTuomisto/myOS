@@ -1,5 +1,6 @@
 <template>
   <div class="desktop-item"
+    @click="tap"
     @dblclick="doubleClick"
   >
     <div class="icon">
@@ -12,6 +13,8 @@
 </template>
 
 <script setup lang="ts">
+import { useSmallScreen } from '@/composables/useSmallScreen';
+
 defineProps<{
   name: string;
 }>();
@@ -20,8 +23,19 @@ const emit = defineEmits<{
   click: [];
 }>();
 
+// Double-click opens on desktop; phones open on a single tap, since double-tap is unreliable there
+const mobile = useSmallScreen();
+
+function tap() {
+  if (mobile.value) {
+    emit('click');
+  }
+}
+
 function doubleClick() {
-  emit('click');
+  if (!mobile.value) {
+    emit('click');
+  }
 }
 </script>
 

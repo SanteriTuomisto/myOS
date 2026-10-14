@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 import DesktopItem from '@/components/running/desktop/DesktopItem.vue';
+import { stubSmallScreen } from '../../../utils';
 
 describe('DesktopItem', () => {
   it('shows its name and icon slot', () => {
@@ -18,6 +19,17 @@ describe('DesktopItem', () => {
 
     await wrapper.trigger('click');
     expect(wrapper.emitted('click')).toBeUndefined();
+
+    await wrapper.trigger('dblclick');
+    expect(wrapper.emitted('click')).toHaveLength(1);
+  });
+
+  it('opens on a single tap on phones, and ignores double taps', async () => {
+    stubSmallScreen(true);
+    const wrapper = mount(DesktopItem, { props: { name: 'Browser' } });
+
+    await wrapper.trigger('click');
+    expect(wrapper.emitted('click')).toHaveLength(1);
 
     await wrapper.trigger('dblclick');
     expect(wrapper.emitted('click')).toHaveLength(1);

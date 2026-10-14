@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils';
 import type { Pinia } from 'pinia';
 import FileSystemItem from '@/components/running/fileExplorer/FileSystemItem.vue';
 import FolderIcon from '@/assets/FolderIcon.vue';
-import { createTestPinia } from '../../../utils';
+import { createTestPinia, stubSmallScreen } from '../../../utils';
 import { useApplicationsStore } from '@/stores/applications';
 import type { ItemType } from '@/types';
 
@@ -90,6 +90,36 @@ describe('FileSystemItem', () => {
       expect(wrapper.emitted('selected')).toBeUndefined();
       expect(wrapper.emitted('folderClick')).toBeUndefined();
       expect(applications.applications).toEqual([]);
+    });
+  });
+
+  describe('on phones', () => {
+    it('the first tap selects, tapping a selected item opens it', async () => {
+      stubSmallScreen(true);
+      const applications = useApplicationsStore();
+
+      const unselected = mountItem({ id: 4, type: 'file', name: 'Text' });
+      await unselected.trigger('click');
+      expect(unselected.emitted('selected')).toEqual([[4]]);
+      expect(applications.applications).toEqual([]);
+
+      const selected = mountItem({ id: 4, type: 'file', name: 'Text', selected: true });
+      await selected.trigger('click');
+      expect(selected.emitted('deselected')).toBeUndefined();
+      expect(applications.applications).toEqual([
+        expect.objectContaining({ name: 'Text', type: 'file', fileSystemId: 4 }),
+      ]);
+    });
+
+    it('opens a selected folder on tap, and ignores double taps', async () => {
+      stubSmallScreen(true);
+      const wrapper = mountItem({ id: 3, type: 'folder', name: 'Documents', selected: true });
+
+      await wrapper.trigger('dblclick');
+      expect(wrapper.emitted('folderClick')).toBeUndefined();
+
+      await wrapper.trigger('click');
+      expect(wrapper.emitted('folderClick')).toEqual([[{ id: 3, name: 'Documents' }]]);
     });
   });
 });

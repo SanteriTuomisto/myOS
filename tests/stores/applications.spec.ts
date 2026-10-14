@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useApplicationsStore } from '@/stores/applications';
 
@@ -125,26 +125,6 @@ describe('applications store', () => {
 
       expect(apps.getApplicationById(first.id)?.minimized).toBe(false);
       expect(apps.activeWindowId).toBe(first.id);
-    });
-  });
-
-  describe('on small screens', () => {
-    afterEach(() => {
-      vi.unstubAllGlobals();
-    });
-
-    it('opens windows maximized', () => {
-      vi.stubGlobal('matchMedia', (query: string) => ({ matches: query === '(max-width: 767px)' }));
-      const apps = useApplicationsStore();
-
-      expect(apps.openApplication({ name: 'A', type: 'browser' }).maximized).toBe(true);
-    });
-
-    it('opens windows normally on wide screens', () => {
-      vi.stubGlobal('matchMedia', () => ({ matches: false }));
-      const apps = useApplicationsStore();
-
-      expect(apps.openApplication({ name: 'A', type: 'browser' }).maximized).toBe(false);
     });
   });
 });

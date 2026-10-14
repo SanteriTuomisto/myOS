@@ -4,16 +4,17 @@
     @click="setActive"
     class="resizable"
     :class="{
-      'active-window': active && !maximized,
-      'active-full': active && maximized,
-      'inactive-window': !active && !maximized,
-      'inactive-full': !active && maximized,
+      'active-window': active && !fullScreen,
+      'active-full': active && fullScreen,
+      'inactive-window': !active && !fullScreen,
+      'inactive-full': !active && fullScreen,
+      mobile,
     }"
     ref="resizableComponent"
-    dragSelector=".drag-container-1"
-    :active="handlers"
+    :dragSelector="mobile ? NO_DRAG : '.drag-container-1'"
+    :active="mobile ? [] : handlers"
     :fit-parent="true"
-    :maximize="maximized"
+    :maximize="fullScreen"
     :min-width="minW"
     :min-height="minH"
     :width="width"
@@ -27,6 +28,7 @@
     @drag:move="eHandler"
     @drag:start="eHandler"
     @drag:end="eHandler"
+    @maximize="onMaximize"
   >
     <div class="block">
       <div class="drag-container-1"
@@ -40,7 +42,7 @@
           <div @click.stop="minimizeWindow">
             <MinimizeIcon class="icon" />
           </div>
-          <div @click.stop="maximizeWindow">
+          <div v-if="!mobile" @click.stop="maximizeWindow">
             <ExpandIcon class="icon" />
           </div>
           <div @click.stop="closeWindow">
@@ -65,12 +67,24 @@ import ExpandIcon from '@/assets/ExpandIcon.vue';
 import MinimizeIcon from '@/assets/MinimizeIcon.vue';
 import type { Application, Position } from '@/types';
 import { useApplicationsStore } from '@/stores/applications';
+import { useSmallScreen } from '@/composables/useSmallScreen';
 
 // vue-resizable ships only a UMD build, whose default export ends up nested
 const VueResizable = 'default' in VueResizableModule ? VueResizableModule.default : VueResizableModule;
 
+/** The parts of the vue-resizable instance that onMaximize sets. */
+interface ResizableInternals {
+  $el: HTMLElement;
+  w: number;
+  h: number;
+  l: number;
+  t: number;
+}
+
 interface ResizableEvent {
   eventName: string;
+  /** The vue-resizable instance */
+  cmp?: unknown;
   left: Position['left'];
   top: Position['top'];
   width: number;
@@ -98,6 +112,13 @@ const applications = useApplicationsStore();
 const { activeWindowId } = storeToRefs(applications);
 
 const handlers = ['r', 'rb', 'b', 'lb', 'l', 'lt', 't', 'rt'];
+// vue-resizable needs a valid selector; this one matches nothing, so nothing can be dragged
+const NO_DRAG = '.no-drag';
+
+// On phones every window is shown full screen and can't be moved or resized. This only
+// changes how it's shown: the saved size, position and maximized state stay as they were,
+// so a wide screen gets the normal windows back.
+const mobile = useSmallScreen();
 const offset = props.index * 20;
 
 // Position and size are owned by vue-resizable while dragging, and pushed to the store after each change
@@ -109,6 +130,7 @@ const top = ref<Position['top']>(props.app.position?.top ?? `calc(50% - ${props.
 const active = computed(() => activeWindowId.value === props.app.id);
 const minimized = computed(() => props.app.minimized);
 const maximized = computed(() => props.app.maximized);
+const fullScreen = computed(() => maximized.value || mobile.value);
 // True during a drag or resize
 const interacting = ref(false);
 
@@ -125,6 +147,10 @@ function eHandler(data: ResizableEvent) {
   if (data.eventName !== 'mount' && !minimized.value) {
     applications.setActiveWindow(props.app.id);
   }
+  // The full-screen geometry isn't the window's real size; don't save it
+  if (mobile.value) {
+    return;
+  }
   interacting.value = data.eventName.endsWith(':start') || data.eventName.endsWith(':move');
   width.value = data.width;
   height.value = data.height;
@@ -133,12 +159,35 @@ function eHandler(data: ResizableEvent) {
   updateApplicationToStore(data.eventName === 'drag:move' ? { maximized: false } : {});
 }
 
+// Leaving full screen: vue-resizable puts back the geometry it saw when the window went full
+// screen. For a window opened on a phone that's the phone-sized one, so set the real saved
+// size and position instead, kept on screen.
+function onMaximize(data: ResizableEvent & { state: boolean }) {
+  const resizable = data.cmp as ResizableInternals | undefined;
+  const parent = resizable?.$el.parentElement;
+  if (data.state || mobile.value || !resizable || !parent) {
+    return;
+  }
+  const keepInside = (value: number, size: number, room: number) => Math.min(Math.max(value, 0), Math.max(room - size, 0));
+  // Never-moved windows have a centering calc() position; work it out in pixels
+  const centered = (size: number, room: number) => (room - size) / 2 + offset;
+  const l = keepInside(typeof left.value === 'number' ? left.value : centered(width.value, parent.clientWidth), width.value, parent.clientWidth);
+  const t = keepInside(typeof top.value === 'number' ? top.value : centered(height.value, parent.clientHeight), height.value, parent.clientHeight);
+  Object.assign(resizable, { w: width.value, h: height.value, l, t });
+  left.value = l;
+  top.value = t;
+  updateApplicationToStore();
+}
+
 function minimizeWindow() {
   updateApplicationToStore();
   applications.minimizeWindow(props.app.id);
 }
 
 function maximizeWindow() {
+  if (mobile.value) {
+    return;
+  }
   updateApplicationToStore({ maximized: !maximized.value });
 }
 
@@ -196,6 +245,24 @@ onMounted(() => {
 
   .icon {
     height: 16px;
+  }
+
+  // Bigger targets for fingers; there's no maximize button on phones
+  .mobile .topbar-buttons {
+    width: auto;
+    gap: 12px;
+  }
+
+  .mobile .topbar-buttons > div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 28px;
+  }
+
+  .mobile .icon {
+    height: 22px;
   }
 
   .block {
