@@ -20,7 +20,8 @@ Never rename an app id: saved items that point to the old id stop opening (they'
    - Don't send `X-Frame-Options: DENY`/`SAMEORIGIN` or a `Content-Security-Policy: frame-ancestors` that leaves out the myOS origin. GitHub Pages sends neither.
    - It should fill the viewport (`html, body { height: 100%; margin: 0 }`) and handle being resized, since the window can be any size down to its `minSize`.
 2. **Add an icon** to `src/assets/` as a Vue SVG component using `currentColor` (see `SynthIcon.vue`).
-3. **Add a registry entry** in `src/apps/registry.ts`:
+3. **Add a registry entry** in `src/apps/registry.ts`: add the id to the `AppType` union, then the entry
+   to `apps` (TypeScript complains until both match):
 
    ```ts
    synth: {

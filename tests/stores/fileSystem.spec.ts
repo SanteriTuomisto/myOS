@@ -111,7 +111,7 @@ describe('fileSystem store', () => {
     expect(fs.uniqueName(desktop, 'Folder')).toBe('Folder 2');
   });
 
-  it('deletes an item and its saved content', () => {
+  it('deleting moves an item and its saved content to the recycle bin', () => {
     const fs = useFileSystemStore();
     const documents = fs.findFolderPath(3)!;
     fs.saveFileContent(5, '<p>hi</p>');
@@ -120,6 +120,128 @@ describe('fileSystem store', () => {
 
     expect(fs.getFolderContent(documents)).toEqual([]);
     expect(fs.getFileContent(5)).toBeUndefined();
+    expect(fs.recycleBin).toEqual([
+      { item: { id: 5, type: 'file', name: 'Text' }, originalPath: documents, fileData: { 5: '<p>hi</p>' } },
+    ]);
+  });
+
+  it('deleting a folder takes the saved content of everything inside it', () => {
+    const fs = useFileSystemStore();
+    const myComputer = fs.findFolderPath(0)!;
+    fs.saveFileContent(5, 'nested');
+    fs.saveFileContent(4, 'sibling');
+
+    fs.deleteItem(myComputer, 3);
+
+    expect(fs.recycleBin[0].fileData).toEqual({ 5: 'nested' });
+    expect(fs.getFileContent(4)).toBe('sibling');
+  });
+
+  it('never deletes system items', () => {
+    const fs = useFileSystemStore();
+    const desktop = fs.findFolderPath(12)!;
+
+    for (const id of [0, 6, 12]) {
+      fs.deleteItem(ROOT_PATH, id);
+    }
+    fs.deleteItem(desktop, 13);
+
+    expect(fs.items.map((item) => item.id)).toEqual(expect.arrayContaining([0, 6, 12]));
+    expect(fs.getTopLevelFolder('Desktop').map((item) => item.id)).toContain(13);
+    expect(fs.recycleBin).toEqual([]);
+  });
+
+  it('restores an item and its content to where it was deleted from', () => {
+    const fs = useFileSystemStore();
+    const documents = fs.findFolderPath(3)!;
+    fs.saveFileContent(5, 'back again');
+    fs.deleteItem(documents, 5);
+
+    fs.restoreItem(5);
+
+    expect(fs.getFolderContent(documents)?.map((item) => item.id)).toEqual([5]);
+    expect(fs.getFileContent(5)).toBe('back again');
+    expect(fs.recycleBin).toEqual([]);
+  });
+
+  it('restores to the Desktop when the original folder is gone', () => {
+    const fs = useFileSystemStore();
+    const documents = fs.findFolderPath(3)!;
+    fs.deleteItem(documents, 5);
+    fs.deleteItem(fs.findFolderPath(0)!, 3);
+    fs.emptyRecycleBin();
+    const folder = fs.addItem(ROOT_PATH, 'folder', 'Temp')!;
+    const tempPath = [...ROOT_PATH, { id: folder.id, name: 'Temp' }];
+    fs.addItem(tempPath, 'file', 'Note');
+    const note = fs.getFolderContent(tempPath)![0];
+    fs.deleteItem(tempPath, note.id);
+    fs.deleteItem(ROOT_PATH, folder.id);
+
+    fs.restoreItem(note.id);
+
+    expect(fs.getTopLevelFolder('Desktop').map((item) => item.name)).toContain('Note');
+  });
+
+  it('gives a restored item a free name if the old one was taken meanwhile', () => {
+    const fs = useFileSystemStore();
+    const documents = fs.findFolderPath(3)!;
+    fs.deleteItem(documents, 5);
+    fs.addItem(documents, 'file', 'text');
+
+    fs.restoreItem(5);
+
+    expect(fs.getFolderContent(documents)?.map((item) => item.name)).toEqual(['text', 'Text (2)']);
+  });
+
+  it('restores everything at once', () => {
+    const fs = useFileSystemStore();
+    const myComputer = fs.findFolderPath(0)!;
+    fs.deleteItem(myComputer, 4);
+    fs.deleteItem(myComputer, 3);
+
+    fs.restoreAll();
+
+    expect(fs.getFolderContent(myComputer)?.map((item) => item.id).sort()).toEqual([3, 4]);
+    expect(fs.recycleBin).toEqual([]);
+  });
+
+  it('emptying the recycle bin deletes for good', () => {
+    const fs = useFileSystemStore();
+    fs.saveFileContent(4, 'gone');
+    fs.deleteItem(fs.findFolderPath(0)!, 4);
+
+    fs.emptyRecycleBin();
+    fs.restoreItem(4);
+
+    expect(fs.recycleBin).toEqual([]);
+    expect(fs.getFileContent(4)).toBeUndefined();
+  });
+
+  it('renames items, trimming the name', () => {
+    const fs = useFileSystemStore();
+    const myComputer = fs.findFolderPath(0)!;
+
+    expect(fs.renameItem(myComputer, 4, '  Notes  ')).toBeUndefined();
+
+    expect(fs.getFolderContent(myComputer)?.find((item) => item.id === 4)?.name).toBe('Notes');
+  });
+
+  it('allows changing only the case of a name', () => {
+    const fs = useFileSystemStore();
+    const myComputer = fs.findFolderPath(0)!;
+
+    expect(fs.renameItem(myComputer, 4, 'TEXT')).toBeUndefined();
+  });
+
+  it('refuses empty, duplicate and system item names', () => {
+    const fs = useFileSystemStore();
+    const myComputer = fs.findFolderPath(0)!;
+
+    expect(fs.renameItem(myComputer, 4, '   ')).toBe('Name can\'t be empty');
+    expect(fs.renameItem(myComputer, 4, 'documents')).toBe('documents already exists here');
+    expect(fs.renameItem(ROOT_PATH, 12, 'Stuff')).toBe('Desktop can\'t be renamed');
+    expect(fs.renameItem(ROOT_PATH, 999, 'Stuff')).toBe('Item not found');
+    expect(fs.getFolderContent(myComputer)?.find((item) => item.id === 4)?.name).toBe('Text');
   });
 
   it('deleting a missing id leaves the folder untouched', () => {

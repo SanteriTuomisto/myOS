@@ -10,28 +10,29 @@ Everything we want to do with myOS: ideas, todos and known bugs. Check items off
 
 ## Known bugs
 
-- [ ] Mobile: windows opened at desktop size hang off a phone screen. They need a mobile layout, e.g. always maximized.
-- [ ] Recycle Bin opens an empty window.
+- [x] Mobile: new windows open maximized on phones. Windows opened at desktop size before switching to a phone can still stick out.
+- [x] Recycle Bin opens an empty window.
 - [ ] Music player: songs go in `src/assets/music/`, which doesn't exist yet; a failed `audio.play()` isn't handled.
-- [ ] On reload, the last window to mount becomes active instead of the saved active window.
+- [x] On reload, the last window to mount becomes active instead of the saved active window.
+- [x] Focusing an input in a window that sticks out past the screen edge scrolled the whole desktop sideways.
 - [ ] Browser URL bar keeps typed text after going back to the same page.
 - [ ] Monster Slayer: attack/special/heal never roll their top value (e.g. 5–11 instead of 5–12), special attack is usable in round 1, heal caps at 100 instead of starting health, the shop and gear views are empty.
 
 ## Nice-to-have features
 
 - [x] Nicer icons: no hardcoded if/else in Start menu, Desktop and File Explorer (covered by the app registry)
-- [ ] Protect certain folders and files from being deleted (e.g. Desktop, Start Menu, My Computer)
-- [ ] Clicking a taskbar item hides/shows the window, the same as the window's `_` button
+- [x] Protect certain folders and files from being deleted (e.g. Desktop, Start Menu, My Computer)
+- [x] Clicking a taskbar item hides/shows the window, the same as the window's `_` button
 - [ ] File Explorer: drag-and-drop item ordering
-- [ ] File Explorer: rename items (the Rename button exists but does nothing yet)
-- [ ] Naming items and folders when they're created
-- [ ] Recycle bin: deleted items go there, with "restore one" and "restore all"
+- [x] File Explorer: rename items
+- [x] Naming items and folders when they're created
+- [x] Recycle bin: deleted items go there, with "restore one", "restore all" and "empty bin"
 
 ## New apps
 
 ### From my other repos (iframe apps)
-- [ ] Analog synth simulator (synth repo): in myOS at https://santerituomisto.github.io/synth/, live once the deploy workflow (SanteriTuomisto/synth#1) is merged
-- [ ] 3D excavator (3d-machine-viewer repo), also the three.js / Blender demo: in myOS at https://santerituomisto.github.io/3d-machine-viewer/, live once SanteriTuomisto/3d-machine-viewer#1 is merged
+- [x] Analog synth simulator (synth repo): https://santerituomisto.github.io/synth/
+- [x] 3D excavator (3d-machine-viewer repo), also the three.js / Blender demo: https://santerituomisto.github.io/3d-machine-viewer/
 
 ### Built into myOS
 - [ ] **Task manager / Ctrl+Alt+Del**: fake CPU, GPU, network and memory graphs, a list of running apps, and closing them from there
@@ -55,10 +56,7 @@ Everything we want to do with myOS: ideas, todos and known bugs. Check items off
 - [x] Tests for every store and component (Vitest + Vue Test Utils)
 - [ ] End-to-end tests for the main flows (Playwright)
 - [ ] Code that only works on desktop: windows, drag and resize need touch/mobile handling
-- [ ] **Automatic deploy of main.** Today https://santerituomisto.github.io/ is served by GitHub Pages ("deploy from a branch") from the `master` branch root of the separate `SanteriTuomisto/SanteriTuomisto.github.io` repo. Deploying means building myOS by hand and committing the build output there; the last deploy (2024-01, "1.0.0") is still the old Vue CLI build, so the live site is behind this repo. Options:
-  - **Push the build to the Pages repo from CI**: a deploy job in `.github/workflows/ci.yml` that runs on pushes to main after the checks pass, then commits `dist/` to `SanteriTuomisto.github.io` `master` (e.g. `peaceiris/actions-gh-pages` with `external_repository`). Needs a deploy key or fine-grained token with write access to that repo, stored as a secret here. Keeps the URL and the Pages repo as-is.
-  - **Move Pages into this repo**: rename this repo to `SanteriTuomisto.github.io` (or make the old one redirect) and switch Pages to "GitHub Actions" as the source, then deploy with `actions/upload-pages-artifact` + `actions/deploy-pages`. No cross-repo secret, but the old repo's history and settings get retired.
-  - Either way `base` stays `/` in `vite.config.ts`, since a user site is served from the domain root. Add `.nojekyll` (or deploy via the Actions source) so Pages doesn't run Jekyll on the output.
+- [x] **Automatic deploy of main**: merging to main deploys myOS to https://santerituomisto.github.io/myOS/ (`.github/workflows/deploy.yml`); the `SanteriTuomisto.github.io` repo only redirects the root there and fixes the case of mistyped app paths.
 
 ## Done
 

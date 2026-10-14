@@ -1,6 +1,6 @@
 <template>
   <div class="menu-item"
-    @click="setActive"
+    @click="toggle"
     :class="active ? 'active' : 'inactive'"
   >
     {{ app.name }}
@@ -22,8 +22,9 @@ const { activeWindowId } = storeToRefs(applications);
 
 const active = computed(() => activeWindowId.value === props.app.id);
 
-function setActive() {
-  applications.setActiveWindow(active.value ? null : props.app.id);
+// Same as the window's minimize button for the active window; otherwise brings it to the front
+function toggle() {
+  applications.toggleWindow(props.app.id);
 }
 </script>
 

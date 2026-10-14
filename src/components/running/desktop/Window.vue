@@ -121,8 +121,8 @@ function updateApplicationToStore(changes: Partial<Pick<Application, 'minimized'
 }
 
 function eHandler(data: ResizableEvent) {
-  // A minimized window only gets the mount event (e.g. after a reload); keep it minimized
-  if (!minimized.value) {
+  // Mounting (opening, or restoring windows after a reload) keeps the saved active window
+  if (data.eventName !== 'mount' && !minimized.value) {
     applications.setActiveWindow(props.app.id);
   }
   interacting.value = data.eventName.endsWith(':start') || data.eventName.endsWith(':move');
@@ -134,8 +134,8 @@ function eHandler(data: ResizableEvent) {
 }
 
 function minimizeWindow() {
-  updateApplicationToStore({ minimized: true });
-  applications.setActiveWindow(null);
+  updateApplicationToStore();
+  applications.minimizeWindow(props.app.id);
 }
 
 function maximizeWindow() {

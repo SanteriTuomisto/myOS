@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useApplicationsStore } from '@/stores/applications';
 
@@ -81,5 +81,70 @@ describe('applications store', () => {
     apps.setActiveWindow(null);
 
     expect(apps.activeWindowId).toBeNull();
+  });
+
+  it('minimizing activates the newest other visible window', () => {
+    const apps = useApplicationsStore();
+    const first = apps.openApplication({ name: 'A', type: 'browser' });
+    const second = apps.openApplication({ name: 'B', type: 'terminal' });
+
+    apps.minimizeWindow(second.id);
+
+    expect(apps.getApplicationById(second.id)?.minimized).toBe(true);
+    expect(apps.activeWindowId).toBe(first.id);
+  });
+
+  describe('toggleWindow (taskbar click)', () => {
+    it('minimizes the active window', () => {
+      const apps = useApplicationsStore();
+      const app = apps.openApplication({ name: 'A', type: 'browser' });
+
+      apps.toggleWindow(app.id);
+
+      expect(apps.getApplicationById(app.id)?.minimized).toBe(true);
+      expect(apps.activeWindowId).toBeNull();
+    });
+
+    it('restores and activates a minimized window', () => {
+      const apps = useApplicationsStore();
+      const app = apps.openApplication({ name: 'A', type: 'browser' });
+      apps.toggleWindow(app.id);
+
+      apps.toggleWindow(app.id);
+
+      expect(apps.getApplicationById(app.id)?.minimized).toBe(false);
+      expect(apps.activeWindowId).toBe(app.id);
+    });
+
+    it('brings an inactive window to the front without minimizing it', () => {
+      const apps = useApplicationsStore();
+      const first = apps.openApplication({ name: 'A', type: 'browser' });
+      apps.openApplication({ name: 'B', type: 'terminal' });
+
+      apps.toggleWindow(first.id);
+
+      expect(apps.getApplicationById(first.id)?.minimized).toBe(false);
+      expect(apps.activeWindowId).toBe(first.id);
+    });
+  });
+
+  describe('on small screens', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('opens windows maximized', () => {
+      vi.stubGlobal('matchMedia', (query: string) => ({ matches: query === '(max-width: 767px)' }));
+      const apps = useApplicationsStore();
+
+      expect(apps.openApplication({ name: 'A', type: 'browser' }).maximized).toBe(true);
+    });
+
+    it('opens windows normally on wide screens', () => {
+      vi.stubGlobal('matchMedia', () => ({ matches: false }));
+      const apps = useApplicationsStore();
+
+      expect(apps.openApplication({ name: 'A', type: 'browser' }).maximized).toBe(false);
+    });
   });
 });

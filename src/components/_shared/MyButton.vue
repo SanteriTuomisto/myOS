@@ -31,6 +31,11 @@ defineProps<{
     color: #ffff00;
   }
 
+  &:disabled {
+    color: #9090e6;
+    cursor: default;
+  }
+
   &-selected {
     @extend .button;
     background-color: #7575e8;
