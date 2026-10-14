@@ -48,6 +48,10 @@ Everything we want to do with myOS: ideas, todos and known bugs. Check items off
 - [ ] Move from Vuex (maintenance mode) to Pinia
 - [ ] Convert remaining plain-JS components to TypeScript
 - [ ] Code that only works on desktop: windows, drag and resize need touch/mobile handling
+- [ ] **Automatic deploy of main.** Today https://santerituomisto.github.io/ is served by GitHub Pages ("deploy from a branch") from the `master` branch root of the separate `SanteriTuomisto/SanteriTuomisto.github.io` repo. Deploying means building myOS by hand and committing the build output there; the last deploy (2024-01, "1.0.0") is still the old Vue CLI build, so the live site is behind this repo. Options:
+  - **Push the build to the Pages repo from CI**: a deploy job in `.github/workflows/ci.yml` that runs on pushes to main after the checks pass, then commits `dist/` to `SanteriTuomisto.github.io` `master` (e.g. `peaceiris/actions-gh-pages` with `external_repository`). Needs a deploy key or fine-grained token with write access to that repo, stored as a secret here. Keeps the URL and the Pages repo as-is.
+  - **Move Pages into this repo**: rename this repo to `SanteriTuomisto.github.io` (or make the old one redirect) and switch Pages to "GitHub Actions" as the source, then deploy with `actions/upload-pages-artifact` + `actions/deploy-pages`. No cross-repo secret, but the old repo's history and settings get retired.
+  - Either way `base` stays `/` in `vite.config.ts`, since a user site is served from the domain root. Add `.nojekyll` (or deploy via the Actions source) so Pages doesn't run Jekyll on the output.
 
 ## Done
 
