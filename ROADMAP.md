@@ -40,6 +40,8 @@ Everything we want to do with myOS: ideas, todos and known bugs. Check items off
 ### From my other repos (iframe apps)
 - [x] Analog synth simulator (synth repo): https://santerituomisto.github.io/synth/
 - [x] 3D excavator (3d-machine-viewer repo), also the three.js / Blender demo: https://santerituomisto.github.io/3d-machine-viewer/
+- [ ] Drum machine (new repo, deployed like the synth)
+- [ ] **DAW**: record songs with the synth and the drum machine. Needs the apps to talk to each other, e.g. through the postMessage bridge (notes, tempo, recorded audio), or the DAW hosting both instruments itself.
 
 ### Built into myOS
 - [ ] **Task manager / Ctrl+Alt+Del**: fake CPU, GPU, network and memory graphs, a list of running apps, and closing them from there
