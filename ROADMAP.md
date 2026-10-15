@@ -17,6 +17,9 @@ Everything we want to do with myOS: ideas, todos and known bugs. Check items off
 - [x] Focusing an input in a window that sticks out past the screen edge scrolled the whole desktop sideways.
 - [ ] Browser URL bar keeps typed text after going back to the same page.
 - [ ] Monster Slayer: attack/special/heal never roll their top value (e.g. 5–11 instead of 5–12), special attack is usable in round 1, heal caps at 100 instead of starting health, the shop and gear views are empty.
+- [ ] Files: the text file icon is too big and overlaps the item name.
+- [ ] Text editor: typed text is invisible, white on white.
+- [ ] Mobile: more problems found on a real phone (details to come).
 
 ## Nice-to-have features
 
@@ -24,6 +27,10 @@ Everything we want to do with myOS: ideas, todos and known bugs. Check items off
 - [x] Protect certain folders and files from being deleted (e.g. Desktop, Start Menu, My Computer)
 - [x] Clicking a taskbar item hides/shows the window, the same as the window's `_` button
 - [ ] File Explorer: drag-and-drop item ordering
+- [ ] Terminal: tab completion
+- [ ] Terminal: missing basic commands like `cat`
+- [ ] Browser: Boogle search doesn't actually search yet
+- [ ] Browser: bookmarks bar with all the available websites, so they're easier to find
 - [x] File Explorer: rename items
 - [x] Naming items and folders when they're created
 - [x] Recycle bin: deleted items go there, with "restore one", "restore all" and "empty bin"
@@ -33,6 +40,8 @@ Everything we want to do with myOS: ideas, todos and known bugs. Check items off
 ### From my other repos (iframe apps)
 - [x] Analog synth simulator (synth repo): https://santerituomisto.github.io/synth/
 - [x] 3D excavator (3d-machine-viewer repo), also the three.js / Blender demo: https://santerituomisto.github.io/3d-machine-viewer/
+- [ ] Drum machine (new repo, deployed like the synth)
+- [ ] **DAW**: record songs with the synth and the drum machine. Leaning towards the DAW loading both instruments itself (one audio clock, easy recording) rather than separate apps talking over the postMessage bridge; to be decided when we get there.
 
 ### Built into myOS
 - [ ] **Task manager / Ctrl+Alt+Del**: fake CPU, GPU, network and memory graphs, a list of running apps, and closing them from there
@@ -46,6 +55,7 @@ Everything we want to do with myOS: ideas, todos and known bugs. Check items off
   - [ ] Synthwave grid visual, like https://codepen.io/inegoita/pen/BgdXMw
 - [ ] **Funny camera**: face recognition / camera app that makes you look funny (`getUserMedia` + a face-landmark model)
 - [ ] **Virtual machine**: open a new machine inside myOS (myOS in myOS in myOS), or Linux (e.g. the v86 emulator)
+  - Fun fact: myOS can already be opened inside its own browser (www.myos.com) :D
 - [ ] **Virus + antivirus**: browsing dodgy pages in the myOS browser can give you a virus that spams funny popups; an antivirus app cleans it up
 - [ ] **Messenger**: nostalgic Windows Messenger-style chat
 
